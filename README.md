@@ -16,10 +16,9 @@ It is a [Binary Garden](https://binarygarden.com) product.
   and after that it only stores a device token.
 - **The owner manages everything from the laptop window**, under `/admin`: the menu, sales,
   paired devices and settings.
-- **No internet is required.** Linking the install to a Binary Garden account is optional
-  and nothing on the ordering or kitchen path depends on it. When the laptop is online,
-  scanning a new barcode into inventory asks [Open Food Facts](https://world.openfoodfacts.org)
-  for the product's name and size; offline, the owner types them.
+- **No internet is required.** When the laptop is online, scanning a new barcode into
+  inventory asks [Open Food Facts](https://world.openfoodfacts.org) for the product's name
+  and size; offline, the owner types them.
 
 ```
 laptop (torta desktop app)                         tablets and phones (a browser)
@@ -127,14 +126,10 @@ network comes back.
   is the only place that decides this; an illegal move gets a 409.
 - Order numbers restart each business day.
 
-### Backups and the Binary Garden link
+### Backups
 
 - Settings has **download backup**, which exports the whole database as JSON, and
   **restore**, which validates a backup and replaces everything in one transaction.
-- Linking a Binary Garden account is an optional step after setup and in settings. It uses
-  OAuth with PKCE as a public client, redirecting to the laptop's loopback address. It
-  does not replace the admin password and nothing offline depends on it. See
-  `apps/server/src/server/bg.ts`.
 
 ### Why it is built this way
 
@@ -149,8 +144,6 @@ network comes back.
   database process, no port, no installer permissions.
 - **Pairing codes instead of a shared password.** The same effort for staff, and nothing
   to rotate when someone leaves: the owner removes that device.
-- **The local password stays the admin credential** even when a Binary Garden account is
-  linked, so the owner is never locked out because the internet is down.
 
 ### Known limitations
 
@@ -164,9 +157,8 @@ network comes back.
   pair again, so give it a DHCP reservation on the router.
 - **Closing the lid sleeps a Mac** despite the app's sleep blocker. Keep the lid open or
   use an external display.
-- **Planned, not built**: employee PINs, receipt and kitchen printers, payments, finding
-  the laptop without an IP address (mDNS), and owner-started remote support
-  (`docs/support-session.md`).
+- **Planned, not built**: employee PINs, receipt and kitchen printers, payments, and finding
+  the laptop without an IP address (mDNS).
 
 ## Development
 
@@ -317,12 +309,10 @@ the AGPL first (MIT, ISC, BSD and Apache-2.0 are).
 
 ### Environment variables
 
-| Variable             | Used by    | Default                    | Purpose                                                           |
-| -------------------- | ---------- | -------------------------- | ----------------------------------------------------------------- |
-| `PORT`               | `pnpm dev` | `7070`                     | First port the dev server tries                                   |
-| `TORTA_BG_URL`       | server     | `https://binarygarden.com` | Binary Garden instance to link against                            |
-| `TORTA_BG_CLIENT_ID` | server     | `torta`                    | OAuth client id registered on that instance                       |
-| `TORTA_SMOKE`        | Electron   | unset                      | Print the window's `/api/me` status and quit; for scripted checks |
+| Variable      | Used by    | Default | Purpose                                                           |
+| ------------- | ---------- | ------- | ----------------------------------------------------------------- |
+| `PORT`        | `pnpm dev` | `7070`  | First port the dev server tries                                   |
+| `TORTA_SMOKE` | Electron   | unset   | Print the window's `/api/me` status and quit; for scripted checks |
 
 ## Repository layout
 
@@ -338,7 +328,7 @@ apps/shared       zod schemas and types for the api and WebSocket events, and th
                   state machine. Both apps import it as TypeScript source (@torta/shared).
 apps/web          the Vite + React app: routes/{admin,order,kitchen,pair}, api/, components/
 scripts/          dev.mjs (pnpm dev) and notices.mjs (licenses.txt)
-docs/             design notes, such as the planned support session
+docs/             design notes
 ```
 
 The rules the code follows are in [CLAUDE.md](CLAUDE.md). The UI follows

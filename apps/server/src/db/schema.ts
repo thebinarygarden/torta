@@ -58,7 +58,7 @@ export const settings = pgTable(
     weightUnit: text('weight_unit').$type<WeightUnit>().notNull().default('g'),
     liquidUnit: text('liquid_unit').$type<LiquidUnit>().notNull().default('ml'),
     updatedAt: ts('updated_at').defaultNow().notNull(),
-    // Optional link to a Binary Garden account. torta never needs it to run.
+    // Unused. Kept because migrations are additive.
     bgUserId: text('bg_user_id'),
     bgEmail: text('bg_email'),
     bgLinkedAt: ts('bg_linked_at'),

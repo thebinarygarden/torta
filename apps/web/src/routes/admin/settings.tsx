@@ -1,10 +1,9 @@
-import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import type { Currency, LiquidUnit, Settings, WeightUnit } from '@torta/shared';
 import { Button, Input, Select, Switch } from '@binarygarden/flora/form';
-import { useDialog, useToast } from '@binarygarden/flora/overlay';
+import { useToast } from '@binarygarden/flora/overlay';
 import { Card } from '@binarygarden/flora/ui';
 import { get, patch, post } from '../../api/http';
-import { BgLinkCard } from '../../components/bg-link';
 import { useHealth } from '../../components/health';
 import { errorMessage, useT } from '../../i18n';
 
@@ -20,9 +19,7 @@ export function AdminSettings() {
   const [next, setNext] = useState('');
   const { showToast } = useToast();
   const { refresh } = useHealth();
-  const { showConfirm } = useDialog();
   const t = useT();
-  const fileInput = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     get<Settings>('/admin/settings')
@@ -78,25 +75,6 @@ export function AdminSettings() {
     } catch {
       showToast({ message: t.settings.wrongPassword, tone: 'danger' });
     }
-  };
-
-  const restore = async (file: File) => {
-    let backup: unknown;
-    try {
-      backup = JSON.parse(await file.text());
-    } catch {
-      showToast({ message: t.errors.bad_backup, tone: 'danger' });
-      return;
-    }
-    showConfirm(t.settings.restoreConfirm, async () => {
-      try {
-        await post('/admin/import', backup);
-        refresh();
-        showToast({ message: t.settings.restored, tone: 'ok' });
-      } catch (err) {
-        showToast({ message: errorMessage(t, err), tone: 'danger' });
-      }
-    });
   };
 
   return (
@@ -185,23 +163,8 @@ export function AdminSettings() {
           <Button variant="secondary" href="/api/admin/export" download>
             {t.settings.download}
           </Button>
-          <Button variant="ghost" onClick={() => fileInput.current?.click()}>
-            {t.settings.restore}
-          </Button>
-          <input
-            ref={fileInput}
-            type="file"
-            accept="application/json"
-            hidden
-            onChange={(e) => {
-              const f = e.target.files?.[0];
-              e.target.value = '';
-              if (f) restore(f);
-            }}
-          />
         </div>
       </Card>
-      <BgLinkCard />
       <Card title={t.settings.password} padding="md">
         <form className="tt-form" onSubmit={changePassword}>
           <Input

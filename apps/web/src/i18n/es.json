@@ -83,17 +83,6 @@
     "submit": "vincular",
     "ios": "en iphone o ipad, primero añade esta página a la pantalla de inicio, ábrela desde ahí y vincula."
   },
-  "bg": {
-    "title": "binary garden",
-    "linkedAs": "vinculado como {who}",
-    "supportOnly": "solo se necesita para sesiones de soporte. torta funciona igual con o sin esto.",
-    "unlink": "desvincular",
-    "linkTitle": "vincular con binary garden",
-    "linkDescription": "opcional. permite que nuestro soporte se conecte a esta instalación cuando lo pidas. solo este paso necesita internet.",
-    "waiting": "termina de iniciar sesión en la ventana del navegador que se abrió.",
-    "link": "vincular",
-    "skip": "omitir"
-  },
   "admin": {
     "overview": "resumen",
     "menu": "menú",
@@ -214,9 +203,6 @@
     "backup": "respaldo",
     "backupDescription": "esta laptop es la única copia de tu menú y tus ventas. guarda un archivo en otro lugar.",
     "download": "descargar respaldo",
-    "restore": "restaurar desde archivo",
-    "restoreConfirm": "¿reemplazar todo en esta laptop con el respaldo?",
-    "restored": "restaurado",
     "password": "contraseña de admin",
     "current": "actual",
     "new": "nueva",

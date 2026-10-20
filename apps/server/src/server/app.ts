@@ -3,7 +3,6 @@ import { createAuthenticator } from './auth';
 import type { AppDeps, AppEnv } from './context';
 import { ApiError } from './errors';
 import { backupRoutes } from './routes/backup';
-import { bgRoutes } from './routes/bg';
 import { deviceRoutes } from './routes/devices';
 import { inventoryRoutes } from './routes/inventory';
 import { menuRoutes } from './routes/menu';
@@ -34,7 +33,6 @@ export function createApp(deps: AppDeps) {
   api.route('/', settingsRoutes(deps));
   api.route('/', inventoryRoutes(deps));
   api.route('/', deviceRoutes(deps));
-  api.route('/', bgRoutes(deps));
   api.route('/', backupRoutes(deps));
 
   api.onError((err, c) => {

@@ -7,12 +7,11 @@ import { ThemeToggleButton } from '@binarygarden/flora/theme';
 import { Card } from '@binarygarden/flora/ui';
 import { useToast } from '@binarygarden/flora/overlay';
 import { get, post } from '../../api/http';
-import { BgLinkCard } from '../../components/bg-link';
 import { useHealth } from '../../components/health';
 import { LocaleToggle } from '../../components/locale-toggle';
 import { errorMessage, useT } from '../../i18n';
 
-type Gate = 'loading' | 'setup' | 'link' | 'login' | 'in';
+type Gate = 'loading' | 'setup' | 'login' | 'in';
 
 /** What admin pages get from `useOutletContext()`. */
 export interface AdminContext {
@@ -79,19 +78,9 @@ export function AdminLayout() {
       <SetupForm
         onDone={() => {
           refresh();
-          setGate('link');
+          setGate('in');
         }}
       />
-    );
-  }
-  if (gate === 'link') {
-    return (
-      <div className="tt-center">
-        <BgLinkCard
-          onSkip={() => setGate('in')}
-          onLinked={() => setGate('in')}
-        />
-      </div>
     );
   }
   if (gate === 'login') return <LoginForm onDone={() => setGate('in')} />;

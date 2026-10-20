@@ -4,7 +4,6 @@ import { createMiddleware } from 'hono/factory';
 import type { ServerEvent } from '@torta/shared';
 import type { Db } from '../db';
 import type { Principal, Sessions } from './auth';
-import type { BgConfig } from './bg';
 import type { NetworkInfo } from './lan';
 
 export type AppEnv = {
@@ -17,7 +16,6 @@ export type AppDeps = {
   version: string;
   broadcast: (event: ServerEvent) => void;
   network: NetworkInfo;
-  bg: BgConfig;
 };
 
 export const requireAuth = createMiddleware<AppEnv>(async (c, next) => {

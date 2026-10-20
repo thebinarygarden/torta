@@ -83,17 +83,6 @@
     "submit": "pair",
     "ios": "on iphone or ipad, add this page to the home screen first, then open it from there and pair."
   },
-  "bg": {
-    "title": "binary garden",
-    "linkedAs": "linked as {who}",
-    "supportOnly": "needed only for support sessions. torta runs the same with or without it.",
-    "unlink": "unlink",
-    "linkTitle": "link to binary garden",
-    "linkDescription": "optional. lets our support connect to this install when you ask. needs internet for this step only.",
-    "waiting": "finish signing in, in the browser window that opened.",
-    "link": "link",
-    "skip": "skip"
-  },
   "admin": {
     "overview": "overview",
     "menu": "menu",
@@ -214,9 +203,6 @@
     "backup": "backup",
     "backupDescription": "this laptop is the only copy of your menu and sales. keep a file somewhere else.",
     "download": "download backup",
-    "restore": "restore from file",
-    "restoreConfirm": "replace everything on this laptop with the backup?",
-    "restored": "restored",
     "password": "admin password",
     "current": "current",
     "new": "new",
