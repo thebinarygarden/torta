@@ -127,7 +127,6 @@ CREATE TABLE "settings" (
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"bg_user_id" text,
 	"bg_email" text,
-	"bg_refresh_token" text,
 	"bg_linked_at" timestamp with time zone,
 	CONSTRAINT "settings_single_row" CHECK ("settings"."id" = 1)
 );

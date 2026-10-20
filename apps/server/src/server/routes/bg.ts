@@ -6,7 +6,7 @@ import { requireAdmin, type AppDeps, type AppEnv } from '../context';
 
 const PENDING_TTL_MS = 10 * 60_000;
 
-export function bgRoutes({ db, bg, secrets, network }: AppDeps) {
+export function bgRoutes({ db, bg, network }: AppDeps) {
   const app = new Hono<AppEnv>();
   const pending = new Map<string, { verifier: string; expiresAt: number }>();
   const redirectUri = () =>
@@ -43,7 +43,6 @@ export function bgRoutes({ db, bg, secrets, network }: AppDeps) {
       .set({
         bgUserId: null,
         bgEmail: null,
-        bgRefreshToken: null,
         bgLinkedAt: null,
       })
       .where(eq(schema.settings.id, 1));
@@ -74,9 +73,6 @@ export function bgRoutes({ db, bg, secrets, network }: AppDeps) {
         .set({
           bgUserId: account.userId,
           bgEmail: account.email,
-          bgRefreshToken: account.refreshToken
-            ? secrets.seal(account.refreshToken)
-            : null,
           bgLinkedAt: new Date(),
           updatedAt: new Date(),
         })

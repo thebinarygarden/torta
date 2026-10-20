@@ -9,7 +9,7 @@ const fakeBg: typeof fetch = async (input, init) => {
     const form = new URLSearchParams(String(init?.body));
     if (form.get('code') !== 'good-code')
       return new Response('nope', { status: 400 });
-    return Response.json({ access_token: 'at-1', refresh_token: 'rt-1' });
+    return Response.json({ access_token: 'at-1' });
   }
   if (url.endsWith('/oauth2/userinfo')) {
     return Response.json({ sub: 'user-42', email: 'owner@example.com' });
@@ -47,7 +47,8 @@ describe('binary garden link', () => {
       'http://127.0.0.1:7070/api/bg/callback'
     );
     expect(url.searchParams.get('code_challenge_method')).toBe('S256');
-    expect(url.searchParams.get('scope')).toContain('offline_access');
+    // Who signed in, nothing more: no offline_access, so no token to store.
+    expect(url.searchParams.get('scope')).toBe('openid profile email');
   });
 
   test('a callback with an unknown state is refused', async () => {

@@ -61,8 +61,6 @@ export const settings = pgTable(
     // Optional link to a Binary Garden account. torta never needs it to run.
     bgUserId: text('bg_user_id'),
     bgEmail: text('bg_email'),
-    /** Refresh token sealed by the host (Electron `safeStorage`), as base64. */
-    bgRefreshToken: text('bg_refresh_token'),
     bgLinkedAt: ts('bg_linked_at'),
   },
   (t) => [check('settings_single_row', sql`${t.id} = 1`)]

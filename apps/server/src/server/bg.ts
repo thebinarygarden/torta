@@ -36,7 +36,7 @@ export function authorizeUrl(
     response_type: 'code',
     client_id: bg.clientId,
     redirect_uri: p.redirectUri,
-    scope: 'openid profile email offline_access',
+    scope: 'openid profile email',
     state: p.state,
     code_challenge: p.challenge,
     code_challenge_method: 'S256',
@@ -47,7 +47,6 @@ export function authorizeUrl(
 export type LinkedAccount = {
   userId: string;
   email: string | null;
-  refreshToken: string | null;
 };
 
 /** Exchanges the authorization code for tokens, then fetches who signed in. */
@@ -68,10 +67,7 @@ export async function exchangeCode(
   });
   if (!tokenRes.ok)
     throw new Error(`token exchange failed (${tokenRes.status})`);
-  const tokens = (await tokenRes.json()) as {
-    access_token: string;
-    refresh_token?: string;
-  };
+  const tokens = (await tokenRes.json()) as { access_token: string };
 
   const infoRes = await bg.fetch(`${bg.url}/api/auth/oauth2/userinfo`, {
     headers: { authorization: `Bearer ${tokens.access_token}` },
@@ -81,6 +77,5 @@ export async function exchangeCode(
   return {
     userId: info.sub,
     email: info.email ?? null,
-    refreshToken: tokens.refresh_token ?? null,
   };
 }
