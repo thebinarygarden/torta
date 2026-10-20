@@ -4,7 +4,6 @@
  */
 export const errorCodes = [
   'already_setup',
-  'bad_backup',
   'bad_code',
   'bad_password',
   'bad_transition',

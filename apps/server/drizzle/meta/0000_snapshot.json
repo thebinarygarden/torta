@@ -1,5 +1,5 @@
 {
-  "id": "542b875d-dadd-4820-87da-2a054854a789",
+  "id": "cabfb1c1-5e94-451c-84bc-1367004deac8",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -898,6 +898,13 @@
           "primaryKey": false,
           "notNull": true,
           "default": "'ml'"
+        },
+        "auto_update": {
+          "name": "auto_update",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
         },
         "updated_at": {
           "name": "updated_at",

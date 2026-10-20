@@ -55,7 +55,6 @@
     "generic": "algo salió mal. inténtalo de nuevo.",
     "network": "no se puede conectar con la laptop de torta. revisa el wifi.",
     "already_setup": "torta ya está configurado en esta laptop.",
-    "bad_backup": "ese archivo no es un respaldo de torta.",
     "bad_code": "ese código no funcionó. pide uno nuevo en la laptop.",
     "bad_password": "contraseña incorrecta.",
     "bad_transition": "ese pedido ya avanzó. actualizando.",
@@ -82,17 +81,6 @@
     "devicePlaceholder": "caja 1, cocina, terraza",
     "submit": "vincular",
     "ios": "en iphone o ipad, primero añade esta página a la pantalla de inicio, ábrela desde ahí y vincula."
-  },
-  "bg": {
-    "title": "binary garden",
-    "linkedAs": "vinculado como {who}",
-    "supportOnly": "solo se necesita para sesiones de soporte. torta funciona igual con o sin esto.",
-    "unlink": "desvincular",
-    "linkTitle": "vincular con binary garden",
-    "linkDescription": "opcional. permite que nuestro soporte se conecte a esta instalación cuando lo pidas. solo este paso necesita internet.",
-    "waiting": "termina de iniciar sesión en la ventana del navegador que se abrió.",
-    "link": "vincular",
-    "skip": "omitir"
   },
   "admin": {
     "overview": "resumen",
@@ -196,7 +184,6 @@
   "settings": {
     "title": "ajustes",
     "restaurant": "restaurante",
-    "taxes": "impuestos",
     "taxesDescription": "con el impuesto apagado, los pedidos no lo cobran y la página de ventas no lo muestra. la tasa se guarda para cuando lo vuelvas a encender.",
     "chargeTax": "cobrar impuesto",
     "taxRate": "impuesto %",
@@ -211,12 +198,6 @@
     "millilitres": "mililitros",
     "fluidOunces": "onzas líquidas",
     "saved": "guardado",
-    "backup": "respaldo",
-    "backupDescription": "esta laptop es la única copia de tu menú y tus ventas. guarda un archivo en otro lugar.",
-    "download": "descargar respaldo",
-    "restore": "restaurar desde archivo",
-    "restoreConfirm": "¿reemplazar todo en esta laptop con el respaldo?",
-    "restored": "restaurado",
     "password": "contraseña de admin",
     "current": "actual",
     "new": "nueva",
@@ -226,7 +207,20 @@
     "license": "licencia",
     "licenseDescription": "torta es software libre bajo la agpl-3.0.",
     "viewSource": "ver código",
-    "thirdParty": "licencias de terceros"
+    "thirdParty": "licencias de terceros",
+    "updates": "actualizaciones",
+    "thisVersion": "esta es torta {version}.",
+    "autoUpdate": "actualizar automáticamente",
+    "checkNow": "buscar ahora",
+    "checking": "buscando actualizaciones…",
+    "downloading": "descargando {version}, {percent}%",
+    "ready": "{version} está lista. se instala la próxima vez que torta se reinicie.",
+    "upToDate": "al día.",
+    "updateError": "no se pudo buscar actualizaciones. inténtalo cuando la laptop tenga internet.",
+    "restart": "reiniciar y actualizar",
+    "updatesInstalledOnly": "las actualizaciones funcionan en la app instalada.",
+    "restartConfirm": "¿reiniciar torta ahora? las tabletas se reconectan en unos segundos.",
+    "lastBackup": "último respaldo: {time}"
   },
   "menu": {
     "title": "menú",

@@ -8,7 +8,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@binarygarden/flora": "^0.1.3",
+    "@binarygarden/flora": "^0.1.5",
     "@fontsource/hanken-grotesk": "^5",
     "@torta/shared": "workspace:*",
     "framer-motion": "^13",

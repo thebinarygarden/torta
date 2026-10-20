@@ -22,6 +22,7 @@ export const settingsPatch = z.object({
   currency: currency.optional(),
   weightUnit: weightUnit.optional(),
   liquidUnit: liquidUnit.optional(),
+  autoUpdate: z.boolean().optional(),
 });
 
 export const passwordInput = z.object({ current: password, next: password });
@@ -34,6 +35,8 @@ export type Settings = {
   currency: Currency;
   weightUnit: WeightUnit;
   liquidUnit: LiquidUnit;
+  /** Download new versions in the background. Installed app only. */
+  autoUpdate: boolean;
 };
 
 export type SalesSummary = {

@@ -1,8 +1,17 @@
-import { app, Menu, powerSaveBlocker, clipboard, dialog } from 'electron';
+import {
+  app,
+  Menu,
+  powerSaveBlocker,
+  clipboard,
+  dialog,
+  shell,
+} from 'electron';
+import { schema } from '../db';
 import { createServer } from '../server/create';
+import { copyBeforeUpgrade, lastCopyAt } from './data-copy';
 import { mainText } from './i18n';
 import { paths } from './paths';
-import { startUpdater } from './updater';
+import { createUpdater } from './updater';
 import { currentWindow, openAdminWindow } from './window';
 
 type Running = Awaited<ReturnType<typeof createServer>>;
@@ -11,6 +20,25 @@ if (!app.requestSingleInstanceLock()) {
   app.quit();
 } else {
   let server: Running | null = null;
+  let closed = false;
+  let closing: Promise<void> | undefined;
+
+  // Waits for the database to finish writing. Quitting and installing an
+  // update both go through here, once.
+  const closeServer = () =>
+    (closing ??= (server?.close() ?? Promise.resolve())
+      .catch(() => {})
+      .finally(() => {
+        closed = true;
+      }));
+
+  const updater = app.isPackaged
+    ? {
+        ...createUpdater(closeServer),
+        backupAt: () => lastCopyAt(paths.dataCopyDir),
+        showBackup: () => void shell.openPath(paths.dataCopyDir),
+      }
+    : undefined;
 
   app.on('second-instance', () => currentWindow()?.focus());
 
@@ -21,8 +49,10 @@ if (!app.requestSingleInstanceLock()) {
   app.on('activate', () => {
     if (server) openWindow(server);
   });
-  app.on('before-quit', () => {
-    server?.close().catch(() => {});
+  app.on('before-quit', (e) => {
+    if (closed) return;
+    e.preventDefault();
+    closeServer().then(() => app.quit());
   });
 
   const shutdown = () => app.quit();
@@ -33,6 +63,14 @@ if (!app.requestSingleInstanceLock()) {
   app
     .whenReady()
     .then(async () => {
+      if (app.isPackaged) {
+        await copyBeforeUpgrade({
+          dataDir: paths.dataDir,
+          copyDir: paths.dataCopyDir,
+          versionFile: paths.versionFile,
+          version: app.getVersion(),
+        });
+      }
       server = await createServer({
         dataDir: paths.dataDir,
         migrationsFolder: paths.migrationsFolder,
@@ -40,6 +78,7 @@ if (!app.requestSingleInstanceLock()) {
         port: 7070,
         hostname: '0.0.0.0',
         version: app.getVersion(),
+        updater,
       });
       console.log(`torta server · http://127.0.0.1:${server.port}`);
       powerSaveBlocker.start('prevent-app-suspension');
@@ -64,7 +103,11 @@ if (!app.requestSingleInstanceLock()) {
       }
 
       const win = await openWindow(server);
-      startUpdater();
+      const [row] = await server.db
+        .select({ autoUpdate: schema.settings.autoUpdate })
+        .from(schema.settings)
+        .limit(1);
+      updater?.setAuto(row?.autoUpdate ?? true);
 
       if (process.env.TORTA_SMOKE) {
         // TORTA_SMOKE: prove the window is logged in, print the result and

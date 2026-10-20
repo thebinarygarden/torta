@@ -8,6 +8,10 @@ import { app } from 'electron';
  */
 export const paths = {
   dataDir: join(app.getPath('userData'), 'db'),
+  // A copy of the database from before the last update, and the version that
+  // made it. See data-copy.ts.
+  dataCopyDir: join(app.getPath('userData'), 'db-backup'),
+  versionFile: join(app.getPath('userData'), 'last-version'),
   migrationsFolder: app.isPackaged
     ? join(process.resourcesPath, 'drizzle')
     : resolve(__dirname, '../drizzle'),

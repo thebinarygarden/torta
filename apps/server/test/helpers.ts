@@ -4,7 +4,7 @@ import type { ServerEvent } from '@torta/shared';
 import { openDb } from '../src/db';
 import { createApp } from '../src/server/app';
 import { Sessions } from '../src/server/auth';
-import { defaultBg } from '../src/server/bg';
+import type { Updater } from '../src/server/context';
 import { createNetwork } from '../src/server/lan';
 
 export const migrationsFolder = resolve(
@@ -12,9 +12,7 @@ export const migrationsFolder = resolve(
   '../drizzle'
 );
 
-export async function makeApp(
-  bgFetch: typeof fetch = () => Promise.reject(new Error('offline'))
-) {
+export async function makeApp(updater?: Updater) {
   const db = await openDb({ migrationsFolder });
   const sessions = new Sessions();
   const events: ServerEvent[] = [];
@@ -26,12 +24,7 @@ export async function makeApp(
     version: 'test',
     broadcast: (e) => events.push(e),
     network,
-    bg: {
-      ...defaultBg,
-      url: 'https://bg.test',
-      clientId: 'torta-test',
-      fetch: bgFetch,
-    },
+    updater,
   });
   return { app, db, sessions, events, close: () => db.$client.close() };
 }

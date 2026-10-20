@@ -7,7 +7,7 @@ import { json, requireAdmin, type AppDeps, type AppEnv } from '../context';
 import { isIsoDate, localDate } from '../dates';
 import { salesSummary } from '../sales';
 
-export function settingsRoutes({ db }: AppDeps) {
+export function settingsRoutes({ db, updater }: AppDeps) {
   const app = new Hono<AppEnv>().use('/admin/*', requireAdmin);
 
   const publicSettings = (
@@ -19,6 +19,7 @@ export function settingsRoutes({ db }: AppDeps) {
     currency: row.currency,
     weightUnit: row.weightUnit,
     liquidUnit: row.liquidUnit,
+    autoUpdate: row.autoUpdate,
   });
 
   app.get('/admin/settings', async (c) => {
@@ -34,6 +35,9 @@ export function settingsRoutes({ db }: AppDeps) {
       .where(eq(schema.settings.id, 1))
       .returning();
     if (!row) return c.json({ error: 'needs_setup' }, 409);
+    if (c.req.valid('json').autoUpdate !== undefined) {
+      updater?.setAuto(row.autoUpdate);
+    }
     return c.json(publicSettings(row));
   });
 

@@ -13,7 +13,6 @@ import {
   type IngredientChoice,
   type Order,
 } from '@torta/shared';
-import type { Backup } from '../src/server/backup';
 import { client, makeApp, seedMenu, setup } from './helpers';
 
 const ctx = await makeApp();
@@ -279,24 +278,6 @@ describe('ingredients and inventory', () => {
       })
     );
     expect((await api.get('/admin/inventory/barcode/0003')).body).toEqual({});
-  });
-
-  test('a backup carries inventory and ingredients', async () => {
-    const res = await ctx.app.request('/api/admin/export', {
-      headers: { cookie },
-    });
-    const backup = (await res.json()) as Backup;
-    expect(backup.inventoryItems).toHaveLength(1);
-    expect(backup.ingredients).toHaveLength(3);
-
-    const target = await makeApp();
-    const tgt = client(target.app, (await setup(target.app)).cookie);
-    expect((await tgt.post('/admin/import', backup)).status).toBe(200);
-    expect((await tgt.get('/menu')).body).toEqual(
-      (await api.get('/menu')).body
-    );
-    expect((await tgt.get('/admin/inventory')).body).toEqual(await inventory());
-    await target.close();
   });
 
   test('deleting stock unlinks ingredients and drops their quantity', async () => {

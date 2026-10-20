@@ -37,8 +37,6 @@ section of [README.md](README.md). Read it before running anything.
 - Every menu mutation broadcasts `menu.updated`; every order write broadcasts the order.
 - Migrations are additive. Pin `@electric-sql/pglite` exactly; its on-disk format follows
   the embedded Postgres major.
-- No Binary Garden dependency on any offline path. The optional account link and support
-  session are additive features.
 - Scope Hono guards to paths (`.use('/orders/*', requireAuth)`). A bare `use()` on a
   sub-app mounted at the root also guards every route mounted after it;
   `test/pairing.test.ts` catches this.
