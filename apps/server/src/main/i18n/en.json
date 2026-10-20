@@ -1,0 +1,7 @@
+{
+  "openAdmin": "open admin",
+  "copyLanUrl": "copy lan url",
+  "couldNotStart": "torta could not start",
+  "updateTitle": "A new update is ready to install",
+  "updateBody": "{appName} version {version} has been downloaded and will be automatically installed on exit"
+}

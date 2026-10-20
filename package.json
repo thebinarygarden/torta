@@ -1,0 +1,30 @@
+{
+  "name": "torta",
+  "author": "Binary Garden",
+  "description": "A restaurant point of sale that runs on your own laptop",
+  "license": "AGPL-3.0-or-later",
+  "private": true,
+  "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "dev:reset": "pnpm --filter @torta/server exec tsx src/seed/index.ts .data",
+    "electron": "pnpm build && pnpm --filter @torta/server exec electron bundle",
+    "db:generate": "pnpm --filter @torta/server db:generate",
+    "dist": "pnpm --filter @torta/server dist",
+    "lint": "eslint .",
+    "typecheck": "pnpm -r typecheck",
+    "test": "pnpm -r test",
+    "build": "pnpm -r build",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^8",
+    "@typescript-eslint/parser": "^8",
+    "eslint": "^9",
+    "eslint-plugin-react": "^7",
+    "eslint-plugin-react-hooks": "^7",
+    "prettier": "^3",
+    "typescript": "^5"
+  },
+  "packageManager": "pnpm@12.4.1+sha512.2e81e399d73fe8390dab25e06aa788ab7a5908248d2f5a370f82b481147a6a7a367bf8048f9a6fdb6460f21a66f0542dedb8b94ca2c8723596741920b1656d4c"
+}

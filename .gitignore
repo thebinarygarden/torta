@@ -1,0 +1,33 @@
+# dependencies
+node_modules
+
+# builds
+dist/
+release/
+*.tsbuildinfo
+
+# local data (headless dev server database)
+.data/
+
+# editor & os
+.idea/
+.vscode/
+.DS_Store
+
+# logs
+*.log
+
+# environment
+.env
+.env.*
+
+# signing material (see docs/signing.md)
+*.p12
+*.key
+*.csr
+*.cer
+*.pem
+
+# electron
+apps/server/release/
+apps/server/bundle/

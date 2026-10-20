@@ -1,0 +1,35 @@
+{
+  "name": "@torta/server",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "db:generate": "drizzle-kit generate",
+    "build": "node scripts/build.mjs",
+    "dist": "pnpm --filter @torta/web build && node scripts/build.mjs && electron-builder"
+  },
+  "dependencies": {
+    "@electric-sql/pglite": "0.5.10",
+    "@hono/node-server": "^2",
+    "@hono/zod-validator": "^0.9",
+    "@torta/shared": "workspace:*",
+    "drizzle-orm": "^0.45",
+    "electron-updater": "^6.8.9",
+    "hono": "^4",
+    "ws": "^8",
+    "zod": "^4"
+  },
+  "devDependencies": {
+    "@types/node": "^24",
+    "@types/ws": "^8",
+    "drizzle-kit": "^0.31",
+    "electron": "^44.7.2",
+    "electron-builder": "^26.15.3",
+    "esbuild": "^0.28.2",
+    "tsx": "^4",
+    "typescript": "^5",
+    "vitest": "^5"
+  }
+}

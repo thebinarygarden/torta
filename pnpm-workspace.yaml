@@ -1,0 +1,10 @@
+packages:
+  - apps/*
+
+allowBuilds:
+  electron: true
+  electron-winstaller: false
+  esbuild: true
+
+minimumReleaseAgeExclude:
+  - '@binarygarden/flora@0.1.3'

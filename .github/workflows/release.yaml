@@ -1,0 +1,71 @@
+name: release
+
+# Tag a commit v<version> (matching the version in apps/server/package.json) to
+# build the macOS, Windows and Linux installers and publish them as a GitHub release.
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        # macos-26 has Xcode 26, whose actool compiles the Icon Composer icon.
+        os: [macos-26, windows-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    # Azure trusts GitHub's login token only from this environment (limited to v* tags).
+    environment: release
+    permissions:
+      contents: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
+      - name: tag must match the app version
+        shell: bash
+        run: |
+          version=$(node -p "require('./apps/server/package.json').version")
+          [ "${GITHUB_REF_NAME}" = "v${version}" ] || {
+            echo "tag ${GITHUB_REF_NAME} but apps/server/package.json is ${version}"; exit 1; }
+
+      - run: pnpm --filter @torta/web build
+      - run: pnpm --filter @torta/server build
+
+      # Windows signing: keyless Azure login for electron-builder's azureSignOptions.
+      - name: log in to azure (windows signing)
+        if: runner.os == 'Windows'
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      # GitHub's login token expires within minutes; fetching the signing token now caches
+      # it for the hour the build may take.
+      - name: cache the azure signing token
+        if: runner.os == 'Windows'
+        run: az account get-access-token --resource https://codesigning.azure.net --output none
+
+      # electron-builder signs and notarizes macOS when the Apple env vars below are set.
+      - name: build and publish installers
+        shell: bash
+        run: pnpm --filter @torta/server exec electron-builder --publish always
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # macOS signing: the Developer ID certificate as a base64 .p12, and its password.
+          # macOS runner only: on Windows, electron-builder falls back to CSC_LINK and
+          # would try to sign the installer with the Apple certificate.
+          CSC_LINK: ${{ runner.os == 'macOS' && secrets.CSC_LINK || '' }}
+          CSC_KEY_PASSWORD: ${{ runner.os == 'macOS' && secrets.CSC_KEY_PASSWORD || '' }}
+          CSC_IDENTITY_AUTO_DISCOVERY: ${{ runner.os == 'macOS' && secrets.CSC_LINK != '' }}
+          # macOS notarization
+          APPLE_ID: ${{ runner.os == 'macOS' && secrets.APPLE_ID || '' }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ runner.os == 'macOS' && secrets.APPLE_APP_SPECIFIC_PASSWORD || '' }}
+          APPLE_TEAM_ID: ${{ runner.os == 'macOS' && secrets.APPLE_TEAM_ID || '' }}

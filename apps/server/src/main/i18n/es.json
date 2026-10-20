@@ -1,0 +1,7 @@
+{
+  "openAdmin": "abrir admin",
+  "copyLanUrl": "copiar url de la red local",
+  "couldNotStart": "torta no pudo iniciar",
+  "updateTitle": "Hay una actualización lista para instalar",
+  "updateBody": "{appName} versión {version} ya se descargó y se instalará al salir"
+}
