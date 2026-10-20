@@ -3,7 +3,7 @@
 // Runs after `vite build`, so the headless server, Electron and the installers
 // all serve it from the web build. Electron's own notices are added by
 // electron-builder.
-import { execFileSync } from 'node:child_process';
+import { execSync } from 'node:child_process';
 import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -11,11 +11,10 @@ import { fileURLToPath } from 'node:url';
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const out = join(root, 'apps/web/dist/licenses.txt');
 
+// Through the shell, because on Windows pnpm is a .cmd shim that Node can only
+// start from a shell.
 const byLicense = JSON.parse(
-  execFileSync('pnpm', ['licenses', 'list', '--prod', '--json'], {
-    cwd: root,
-    encoding: 'utf8',
-  })
+  execSync('pnpm licenses list --prod --json', { cwd: root, encoding: 'utf8' })
 );
 const packages = Object.values(byLicense)
   .flat()
