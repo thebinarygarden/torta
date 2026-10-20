@@ -6,6 +6,7 @@ import type { ServerEvent } from '@torta/shared';
 import { openDb, type OpenDbOptions } from '../db';
 import { createApp } from './app';
 import { createAuthenticator, Sessions } from './auth';
+import type { Updater } from './context';
 import { createNetwork } from './lan';
 import { listen } from './port';
 import { attachRealtime } from './ws';
@@ -22,6 +23,7 @@ export type ServerOptions = OpenDbOptions & {
   /** Keep admin sessions in this file across restarts. Dev only. */
   sessionsFile?: string;
   version: string;
+  updater?: Updater;
 };
 
 export async function createServer(opts: ServerOptions) {
@@ -36,6 +38,7 @@ export async function createServer(opts: ServerOptions) {
     version: opts.version,
     broadcast: (e) => broadcast(e),
     network,
+    updater: opts.updater,
   });
 
   if (opts.staticDir) {

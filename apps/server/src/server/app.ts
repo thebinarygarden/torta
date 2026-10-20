@@ -2,13 +2,13 @@ import { Hono } from 'hono';
 import { createAuthenticator } from './auth';
 import type { AppDeps, AppEnv } from './context';
 import { ApiError } from './errors';
-import { backupRoutes } from './routes/backup';
 import { deviceRoutes } from './routes/devices';
 import { inventoryRoutes } from './routes/inventory';
 import { menuRoutes } from './routes/menu';
 import { orderRoutes } from './routes/orders';
 import { sessionRoutes } from './routes/session';
 import { settingsRoutes } from './routes/settings';
+import { updateRoutes } from './routes/updates';
 import { setupRoutes } from './routes/setup';
 
 export function createApp(deps: AppDeps) {
@@ -33,7 +33,7 @@ export function createApp(deps: AppDeps) {
   api.route('/', settingsRoutes(deps));
   api.route('/', inventoryRoutes(deps));
   api.route('/', deviceRoutes(deps));
-  api.route('/', backupRoutes(deps));
+  api.route('/', updateRoutes(deps));
 
   api.onError((err, c) => {
     if (err instanceof ApiError) {

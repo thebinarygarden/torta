@@ -126,11 +126,6 @@ network comes back.
   is the only place that decides this; an illegal move gets a 409.
 - Order numbers restart each business day.
 
-### Backups
-
-- Settings has **download backup**, which exports the whole database as JSON, and
-  **restore**, which validates a backup and replaces everything in one transaction.
-
 ### Why it is built this way
 
 - **Electron for the laptop app.** The hard part is a server (HTTP, WebSockets, a
@@ -291,7 +286,21 @@ Releases come from `.github/workflows/release.yaml`. Pushing a `v<version>` tag 
 matches `apps/server/package.json` builds macOS, Windows and Linux and publishes a GitHub release,
 which the installed apps pick up through `electron-updater`. The workflow signs and
 notarizes the macOS build only when the signing secrets are set, and always signs the
-Windows build through Azure. See [docs/signing.md](docs/signing.md).
+Windows build through Azure. See [docs/signing.md](docs/signing.md). macOS only installs
+signed updates.
+
+Before building, the `upgrade-check` job seeds a database with the previous release
+(`src/seed`) and opens it with this release's migrations (`src/check-upgrade.ts`). If that
+fails, nothing is published. It proves the migrations on sample data, not on every owner's.
+
+On the laptop, Settings → updates shows the version and the update status, has "check
+now", and turns automatic updates on or off (on by default: check at launch and every six
+hours, download in the background). A downloaded update installs the next time torta
+quits, or at once with "restart to update". Quitting waits for the database to close.
+
+The first launch of a new version copies the database to `db-backup` next to `db` before
+opening it, replacing the previous copy. Settings shows when, and opens the folder. To
+restore it, quit torta and replace `db` with `db-backup`.
 
 ### Third-party licenses
 

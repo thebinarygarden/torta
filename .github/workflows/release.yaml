@@ -8,7 +8,38 @@ on:
       - 'v*'
 
 jobs:
+  # Upgrades a database made by the previous release with this release's
+  # migrations. Nothing is published unless it passes.
+  upgrade-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: seed a database with the previous release
+        id: previous
+        shell: bash
+        run: |
+          prev=$(git describe --tags --abbrev=0 --match 'v*' "${GITHUB_REF_NAME}^" 2>/dev/null || true)
+          if [ -z "$prev" ]; then echo "no earlier release"; exit 0; fi
+          echo "upgrading from $prev"
+          git worktree add "$RUNNER_TEMP/prev" "$prev"
+          cd "$RUNNER_TEMP/prev"
+          pnpm install --frozen-lockfile
+          pnpm --filter @torta/server exec tsx src/seed/index.ts "$RUNNER_TEMP/db"
+          echo "seeded=true" >> "$GITHUB_OUTPUT"
+      - name: open it with this release
+        if: steps.previous.outputs.seeded == 'true'
+        run: pnpm --filter @torta/server exec tsx src/check-upgrade.ts "$RUNNER_TEMP/db"
+
   build:
+    needs: upgrade-check
     strategy:
       fail-fast: false
       matrix:

@@ -124,6 +124,7 @@ CREATE TABLE "settings" (
 	"currency" text DEFAULT 'USD' NOT NULL,
 	"weight_unit" text DEFAULT 'g' NOT NULL,
 	"liquid_unit" text DEFAULT 'ml' NOT NULL,
+	"auto_update" boolean DEFAULT true NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"bg_user_id" text,
 	"bg_email" text,

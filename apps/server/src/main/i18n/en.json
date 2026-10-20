@@ -2,6 +2,6 @@
   "openAdmin": "open admin",
   "copyLanUrl": "copy lan url",
   "couldNotStart": "torta could not start",
-  "updateTitle": "A new update is ready to install",
-  "updateBody": "{appName} version {version} has been downloaded and will be automatically installed on exit"
+  "updateTitle": "an update is ready",
+  "updateBody": "torta {version} installs the next time torta restarts. restart it from settings when it's quiet."
 }

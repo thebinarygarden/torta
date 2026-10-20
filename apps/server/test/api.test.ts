@@ -379,6 +379,7 @@ describe('menu, orders and sales', () => {
       currency: 'MXN',
       weightUnit: 'g',
       liquidUnit: 'ml',
+      autoUpdate: true,
     });
     expect(
       (
