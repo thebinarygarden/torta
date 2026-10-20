@@ -6,8 +6,7 @@ import { ApiError } from './errors';
 /**
  * The whole database as one JSON document. The laptop holds the only copy of
  * the business's data, so this export is the backup. IDs are kept so that a
- * restore is exact. The sealed Binary Garden refresh token is left out because
- * it can only be unsealed on the machine that sealed it.
+ * restore is exact.
  */
 const row = z.record(z.string(), z.unknown());
 const rows = z.array(row);
@@ -54,7 +53,7 @@ export async function exportAll(db: Db): Promise<Backup> {
   return {
     torta: 1,
     exportedAt: new Date().toISOString(),
-    settings: settings ? { ...settings, bgRefreshToken: null } : null,
+    settings: settings ?? null,
     categories,
     items,
     modifierGroups,

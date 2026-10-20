@@ -36,6 +36,9 @@ win:
     endpoint: https://eus.codesigning.azure.net/
     codeSigningAccountName: bg-signing
     certificateProfileName: bg-public
+# The Mac updater downloads the zip, never the dmg, so a dmg blockmap is unused.
+dmg:
+  writeUpdateInfo: false
 linux:
   target: [AppImage]
   category: Office

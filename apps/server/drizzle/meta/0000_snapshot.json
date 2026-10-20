@@ -1,5 +1,5 @@
 {
-  "id": "d6676f0e-0e3a-4be4-8484-3104980ed684",
+  "id": "542b875d-dadd-4820-87da-2a054854a789",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -914,12 +914,6 @@
         },
         "bg_email": {
           "name": "bg_email",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "bg_refresh_token": {
-          "name": "bg_refresh_token",
           "type": "text",
           "primaryKey": false,
           "notNull": false

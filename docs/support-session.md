@@ -14,9 +14,10 @@ torta install so they can help the owner. Three constraints shape the design:
    if the install is linked to a Binary Garden account (`settings.bg_user_id`), because
    that link is how the relay knows whose install is connecting.
 2. The torta server opens an outbound websocket to a relay running on Cloud Run
-   (`wss://support.binarygarden.com/install`). It authenticates with an access token
-   obtained from the stored refresh token. The laptop window then shows a short session
-   code.
+   (`wss://support.binarygarden.com/install`). It authenticates with an access token from
+   a fresh Binary Garden sign-in: the owner is at the laptop starting the session, so
+   they sign in then, and torta keeps no token afterwards. The laptop window then shows a
+   short session code.
 3. The support person signs in to the relay with their Binary Garden account and enters
    that code. The relay pairs the two connections.
 4. The relay serializes HTTP requests from the support person's browser and forwards them
@@ -33,8 +34,9 @@ torta install so they can help the owner. Three constraints shape the design:
 - Principals are plain values. `requireAdmin` can be taught to accept `support` where
   support should be allowed, and to refuse it for password changes, unlinking the account
   and importing a backup.
-- Linking a Binary Garden account already stores a sealed refresh token
-  (`settings.bg_refresh_token`), which step 2 needs.
+- Linking a Binary Garden account records which account owns the install
+  (`settings.bg_user_id`). It stores no token, so nothing touches the OS keychain; step 2
+  signs in again when a session starts.
 
 ## Still to decide
 

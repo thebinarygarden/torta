@@ -6,7 +6,6 @@ import { createApp } from '../src/server/app';
 import { Sessions } from '../src/server/auth';
 import { defaultBg } from '../src/server/bg';
 import { createNetwork } from '../src/server/lan';
-import { plainSecrets } from '../src/server/secrets';
 
 export const migrationsFolder = resolve(
   dirname(fileURLToPath(import.meta.url)),
@@ -33,7 +32,6 @@ export async function makeApp(
       clientId: 'torta-test',
       fetch: bgFetch,
     },
-    secrets: plainSecrets,
   });
   return { app, db, sessions, events, close: () => db.$client.close() };
 }

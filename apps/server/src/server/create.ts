@@ -9,7 +9,6 @@ import { createAuthenticator, Sessions } from './auth';
 import { defaultBg, type BgConfig } from './bg';
 import { createNetwork } from './lan';
 import { listen } from './port';
-import { plainSecrets, type Secrets } from './secrets';
 import { attachRealtime } from './ws';
 
 export type ServerOptions = OpenDbOptions & {
@@ -25,7 +24,6 @@ export type ServerOptions = OpenDbOptions & {
   sessionsFile?: string;
   version: string;
   bg?: Partial<BgConfig>;
-  secrets?: Secrets;
 };
 
 export async function createServer(opts: ServerOptions) {
@@ -41,7 +39,6 @@ export async function createServer(opts: ServerOptions) {
     broadcast: (e) => broadcast(e),
     network,
     bg: { ...defaultBg, ...opts.bg },
-    secrets: opts.secrets ?? plainSecrets,
   });
 
   if (opts.staticDir) {

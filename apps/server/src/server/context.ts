@@ -6,7 +6,6 @@ import type { Db } from '../db';
 import type { Principal, Sessions } from './auth';
 import type { BgConfig } from './bg';
 import type { NetworkInfo } from './lan';
-import type { Secrets } from './secrets';
 
 export type AppEnv = {
   Variables: { principal: Principal | null };
@@ -19,7 +18,6 @@ export type AppDeps = {
   broadcast: (event: ServerEvent) => void;
   network: NetworkInfo;
   bg: BgConfig;
-  secrets: Secrets;
 };
 
 export const requireAuth = createMiddleware<AppEnv>(async (c, next) => {

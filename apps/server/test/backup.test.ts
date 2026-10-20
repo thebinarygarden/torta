@@ -30,7 +30,7 @@ test('a backup restores menu, orders, devices and the admin password exactly', a
   );
   const backup = (await res.json()) as Backup;
   expect(backup.torta).toBe(1);
-  expect(backup.settings?.bgRefreshToken).toBeNull();
+  expect(backup.settings).not.toHaveProperty('bgRefreshToken');
 
   // A fresh install with a different password restores the backup.
   const tgt = client(
