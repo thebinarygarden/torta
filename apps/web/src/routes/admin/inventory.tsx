@@ -96,22 +96,24 @@ export function AdminInventory() {
     <>
       <div className="tt-row" data-between>
         <h1>{t.inventory.title}</h1>
-        {items.length > 0 && (
-          <span className="tt-row">
+        <span className="tt-row">
+          {items.length > 0 && (
             <Button
               iconLeft={<IconCheck size={14} />}
               onClick={() => navigate('/admin/inventory/count')}
             >
               {t.inventory.count}
             </Button>
-            <Button
-              iconLeft={<IconPlus size={14} />}
-              onClick={() => navigate('/admin/inventory/delivery')}
-            >
-              {t.inventory.delivery}
-            </Button>
-          </span>
-        )}
+          )}
+          {/* A delivery is also where new items are added, so it stays even
+              when the inventory is empty. */}
+          <Button
+            iconLeft={<IconPlus size={14} />}
+            onClick={() => navigate('/admin/inventory/delivery')}
+          >
+            {t.inventory.delivery}
+          </Button>
+        </span>
       </div>
       {items.length > 0 && (
         <Tabs
