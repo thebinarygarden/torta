@@ -459,13 +459,66 @@ p {
     min-height: 100%;
   }
 }
+/* Below 800px the sidebar folds into a menu that drops down under a top bar,
+   on the same blurred glass as flora's SiteHeader. */
+.tt-admin-bar {
+  display: none;
+}
 @media (max-width: 799px) {
-  /* Stacked on top at phone width: full width, no resizing. */
+  .tt-admin {
+    align-content: start;
+  }
+  .tt-admin-bar,
+  .tt-admin-nav[data-open='true'] {
+    background: oklch(from var(--surface-page) l c h / 0.8);
+    backdrop-filter: blur(var(--blur-overlay));
+  }
+  .tt-admin-bar {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    height: 60px;
+    padding: 0 var(--gutter);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    border-bottom: 1px solid var(--border-default);
+  }
+  .tt-admin-nav {
+    display: none;
+  }
+  .tt-admin-nav[data-open='true'] {
+    display: block;
+    position: fixed;
+    top: 61px;
+    left: 0;
+    right: 0;
+    z-index: 20;
+    max-height: calc(100dvh - 61px);
+    overflow: auto;
+    border-bottom: 1px solid var(--border-default);
+    animation: tt-menu-drop var(--dur-2) var(--ease-out);
+  }
   .tt-admin-nav .fl-side {
     width: 100%;
+    background: transparent;
   }
+  /* The brand is already in the bar. */
+  .tt-admin-nav .fl-side-top,
   .tt-admin-nav .fl-side-handle {
     display: none;
+  }
+}
+@keyframes tt-menu-drop {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tt-admin-nav[data-open='true'] {
+    animation: none;
   }
 }
 .tt-admin-main {

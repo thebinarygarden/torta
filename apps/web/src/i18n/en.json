@@ -87,6 +87,8 @@
     "settings": "settings",
     "surfaces": "surfaces",
     "signOut": "sign out",
+    "openMenu": "open menu",
+    "closeMenu": "close menu",
     "setupTitle": "welcome to torta",
     "setupDescription": "name the place and pick an admin password.",
     "restaurant": "restaurant",

@@ -87,6 +87,8 @@
     "settings": "ajustes",
     "surfaces": "pantallas",
     "signOut": "cerrar sesión",
+    "openMenu": "abrir menú",
+    "closeMenu": "cerrar menú",
     "setupTitle": "bienvenido a torta",
     "setupDescription": "ponle nombre al lugar y elige una contraseña de admin.",
     "restaurant": "restaurante",
