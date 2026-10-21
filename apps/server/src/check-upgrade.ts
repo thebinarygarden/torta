@@ -20,6 +20,17 @@ const db = await openDb({
 });
 await db.select().from(schema.settings);
 const items = await db.select().from(schema.items);
+const stock = await db.select().from(schema.inventoryItems);
+const counts = await db.select().from(schema.inventoryEntries);
 await db.$client.close();
 if (items.length === 0) throw new Error('the seeded menu did not survive');
-console.log(`upgrade ok: ${items.length} menu items read back`);
+// 0001 numbers every item and turns its last count into a ledger line.
+for (const s of stock) {
+  if (!Number.isInteger(s.code)) throw new Error(`${s.name} has no code`);
+  if (!counts.some((c) => c.inventoryItemId === s.id && c.kind === 'counted')) {
+    throw new Error(`${s.name} lost its count`);
+  }
+}
+console.log(
+  `upgrade ok: ${items.length} menu items and ${stock.length} stock items read back`
+);

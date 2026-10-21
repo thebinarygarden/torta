@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useId, useState, type FormEvent } from 'react';
 import { Outlet, useLocation, useNavigate, useParams } from 'react-router';
 import type { Menu } from '@torta/shared';
-import { Button, Input } from '@binarygarden/flora/form';
+import { Button, IconButton, Input } from '@binarygarden/flora/form';
+import { IconMenu, IconX } from '@binarygarden/flora/icons';
 import { SidebarNav } from '@binarygarden/flora/navigation';
 import { ThemeToggleButton } from '@binarygarden/flora/theme';
 import { Card } from '@binarygarden/flora/ui';
@@ -29,6 +30,8 @@ const stored = (key: string) => {
     return null;
   }
 };
+// Below this width the sidebar folds into a menu under a top bar.
+const NARROW = '(max-width: 799px)';
 const store = (key: string, value: string) => {
   try {
     localStorage.setItem(key, value);
@@ -46,6 +49,9 @@ export function AdminLayout() {
   const [navCollapsed, setNavCollapsed] = useState(
     () => stored(NAV_COLLAPSED) === 'true'
   );
+  const [narrow, setNarrow] = useState(() => matchMedia(NARROW).matches);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuId = useId();
   const { health, refresh } = useHealth();
   const { showToast } = useToast();
   const t = useT();
@@ -62,6 +68,25 @@ export function AdminLayout() {
   useEffect(() => {
     if (gate === 'in') reloadMenu();
   }, [gate, reloadMenu]);
+
+  // Widening the window closes the menu; the sidebar is back in place.
+  useEffect(() => {
+    const query = matchMedia(NARROW);
+    const onChange = () => {
+      setNarrow(query.matches);
+      if (!query.matches) setMenuOpen(false);
+    };
+    query.addEventListener('change', onChange);
+    return () => query.removeEventListener('change', onChange);
+  }, []);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onKey = (e: KeyboardEvent) =>
+      e.key === 'Escape' && setMenuOpen(false);
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [menuOpen]);
 
   useEffect(() => {
     get<{ needsSetup: boolean }>('/setup')
@@ -89,7 +114,18 @@ export function AdminLayout() {
   const categories = menu?.categories ?? [];
   return (
     <div className="tt-admin">
-      <aside className="tt-admin-nav">
+      <header className="tt-admin-bar">
+        <span className="tt-brand">{health.restaurantName ?? 'torta'}</span>
+        <IconButton
+          label={menuOpen ? t.admin.closeMenu : t.admin.openMenu}
+          aria-expanded={menuOpen}
+          aria-controls={menuId}
+          onClick={() => setMenuOpen(!menuOpen)}
+        >
+          {menuOpen ? <IconX size={16} /> : <IconMenu size={16} />}
+        </IconButton>
+      </header>
+      <aside id={menuId} className="tt-admin-nav" data-open={menuOpen}>
         <SidebarNav
           collapsible
           width={navWidth}
@@ -97,7 +133,8 @@ export function AdminLayout() {
             setNavWidth(w);
             store(NAV_WIDTH, String(w));
           }}
-          collapsed={navCollapsed}
+          // A sidebar folded to a rail still opens in full in the menu.
+          collapsed={navCollapsed && !narrow}
           onCollapsedChange={(c) => {
             setNavCollapsed(c);
             store(NAV_COLLAPSED, String(c));
@@ -124,15 +161,16 @@ export function AdminLayout() {
             </div>
           }
           current={categoryId ?? section}
-          onSelect={(id) =>
+          onSelect={(id) => {
+            setMenuOpen(false);
             navigate(
               id === 'overview'
                 ? '/admin'
                 : categories.some((c) => c.id === id)
                   ? `/admin/menu/${id}`
                   : `/admin/${id}`
-            )
-          }
+            );
+          }}
           groups={[
             {
               items: [

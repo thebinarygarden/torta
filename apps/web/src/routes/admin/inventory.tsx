@@ -1,40 +1,81 @@
-import { useCallback, useEffect, useState } from 'react';
-import type { BarcodeLookup, InventoryItem, Kind } from '@torta/shared';
-import { Button, IconButton, Input, Select } from '@binarygarden/flora/form';
-import { IconPlus, IconTrashcan } from '@binarygarden/flora/icons';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router';
+import type {
+  InventoryEntry,
+  InventoryHistory,
+  InventoryItem,
+} from '@torta/shared';
+import { Button, IconButton, Input } from '@binarygarden/flora/form';
+import { IconCheck, IconPlus, IconTrashcan } from '@binarygarden/flora/icons';
+import { Tabs } from '@binarygarden/flora/navigation';
 import { useDialog, useToast } from '@binarygarden/flora/overlay';
-import { EmptyState, Table } from '@binarygarden/flora/ui';
-import { del, get, patch, post } from '../../api/http';
+import { EmptyState, Stat, Table } from '@binarygarden/flora/ui';
+import { del, get, patch, put } from '../../api/http';
+import {
+  daysOf,
+  isoDate,
+  shortDate,
+  type Period,
+} from '../../components/dates';
 import { FormDialog } from '../../components/form-dialog';
 import { useHealth } from '../../components/health';
+import { matches } from '../../components/inventory';
+import {
+  InventoryDialog,
+  type InventoryBody,
+} from '../../components/inventory-dialog';
 import { formatCents, parseDollars, toDollars } from '../../components/money';
+import { PeriodPicker } from '../../components/period-picker';
 import { useUnits } from '../../components/units';
 import { errorMessage, format, useT } from '../../i18n';
 
-const lookup = (code: string) =>
-  get<BarcodeLookup>(
-    `/admin/inventory/barcode/${encodeURIComponent(code.trim())}`
-  ).catch((): BarcodeLookup => ({}));
-
+type View = 'stock' | 'history';
 type Dialog =
-  | { kind: 'edit'; item?: InventoryItem }
-  | { kind: 'count'; item: InventoryItem };
+  | { kind: 'item'; item: InventoryItem }
+  | { kind: 'entry'; entry: InventoryEntry };
 
 export function AdminInventory() {
+  const [view, setView] = useState<View>('stock');
   const [items, setItems] = useState<InventoryItem[] | null>(null);
+  const [query, setQuery] = useState('');
   const [dialog, setDialog] = useState<Dialog | null>(null);
+  const [period, setPeriod] = useState<Period>('day');
+  const [anchor, setAnchor] = useState(() => new Date());
+  const [history, setHistory] = useState<InventoryHistory | null>(null);
+  const [today] = useState(() => isoDate(new Date()));
   const { showConfirm } = useDialog();
   const { health } = useHealth();
-  const units = useUnits();
   const { showToast } = useToast();
+  const navigate = useNavigate();
+  const units = useUnits();
   const t = useT();
   const money = (c: number) => formatCents(c, health.currency);
+  const signedMoney = (c: number) =>
+    c === 0 ? money(0) : `${c < 0 ? '−' : '+'}${money(Math.abs(c))}`;
+  const amount = (qty: number, kind: InventoryItem['kind']) =>
+    units.format(qty, kind);
+  // How far a count was from what was expected: "260 g short", "20 extra".
+  const offBy = (diff: number | null, kind: InventoryItem['kind']) =>
+    diff === null
+      ? '—'
+      : diff === 0
+        ? t.inventory.matched
+        : format(diff < 0 ? t.inventory.short : t.inventory.extra, {
+            qty: amount(Math.abs(diff), kind),
+          });
+
+  const days = useMemo(() => daysOf(period, anchor), [period, anchor]);
+  const from = isoDate(days[0]!);
+  const to = isoDate(days.at(-1)!);
 
   const load = useCallback(() => {
     get<InventoryItem[]>('/admin/inventory')
       .then(setItems)
       .catch((e) => showToast({ message: errorMessage(t, e), tone: 'danger' }));
-  }, [showToast, t]);
+    get<InventoryHistory>(`/admin/inventory/history?from=${from}&to=${to}`)
+      .then(setHistory)
+      .catch((e) => showToast({ message: errorMessage(t, e), tone: 'danger' }));
+  }, [from, to, showToast, t]);
   useEffect(load, [load]);
 
   const run = async (p: Promise<unknown>) => {
@@ -48,108 +89,261 @@ export function AdminInventory() {
   };
 
   if (!items) return null;
+  const rows = items.filter((i) => matches(i, query));
+  const value = items.reduce((s, i) => s + i.valueCents, 0);
 
   return (
     <>
       <div className="tt-row" data-between>
         <h1>{t.inventory.title}</h1>
-        <span className="tt-row">
-          <Button
-            size="sm"
-            iconLeft={<IconPlus size={14} />}
-            onClick={() => setDialog({ kind: 'edit' })}
-          >
-            {t.inventory.item}
-          </Button>
-        </span>
+        {items.length > 0 && (
+          <span className="tt-row">
+            <Button
+              iconLeft={<IconCheck size={14} />}
+              onClick={() => navigate('/admin/inventory/count')}
+            >
+              {t.inventory.count}
+            </Button>
+            <Button
+              iconLeft={<IconPlus size={14} />}
+              onClick={() => navigate('/admin/inventory/delivery')}
+            >
+              {t.inventory.delivery}
+            </Button>
+          </span>
+        )}
       </div>
+      {items.length > 0 && (
+        <Tabs
+          variant="line"
+          value={view}
+          onChange={(v) => setView(v as View)}
+          items={[
+            { value: 'stock', label: t.inventory.onHand },
+            { value: 'history', label: t.inventory.history },
+          ]}
+        />
+      )}
 
       {items.length === 0 ? (
         <EmptyState>{t.inventory.empty}</EmptyState>
+      ) : view === 'stock' ? (
+        <>
+          <p className="tt-total">
+            <span className="tt-label">{t.inventory.totalValue}</span>
+            <strong>{money(value)}</strong>
+          </p>
+          <Input
+            placeholder={t.inventory.find}
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
+          {rows.length === 0 ? (
+            <EmptyState>{t.inventory.noMatches}</EmptyState>
+          ) : (
+            <Table>
+              <thead>
+                <tr>
+                  <th data-action>#</th>
+                  <th>{t.inventory.item}</th>
+                  <th data-num>{t.inventory.onHand}</th>
+                  <th data-num>{t.inventory.value}</th>
+                  <th data-num>{t.inventory.lastCount}</th>
+                  <th data-num>{t.inventory.offBy}</th>
+                  <th />
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((i) => (
+                  <tr key={i.id}>
+                    <td data-action className="tt-muted">
+                      #{i.code}
+                    </td>
+                    <td>{i.name}</td>
+                    <td data-num data-low={i.expectedLeft <= 0 || undefined}>
+                      {amount(Math.max(0, i.expectedLeft), i.kind)}
+                    </td>
+                    <td data-num className="tt-muted">
+                      {money(i.valueCents)}
+                    </td>
+                    <td data-num className="tt-muted">
+                      {i.lastCount
+                        ? `${amount(i.lastCount.qty, i.kind)} · ${shortDate(i.lastCount.at)}`
+                        : t.inventory.never}
+                    </td>
+                    <td
+                      data-num
+                      data-low={(i.lastCount?.diff ?? 0) < 0 || undefined}
+                      className={i.lastCount?.diff ? undefined : 'tt-muted'}
+                    >
+                      {offBy(i.lastCount?.diff ?? null, i.kind)}
+                    </td>
+                    <td data-action>
+                      <span className="tt-row" data-end>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setDialog({ kind: 'item', item: i })}
+                        >
+                          {t.edit}
+                        </Button>
+                        <IconButton
+                          size="sm"
+                          label={t.inventory.deleteItem}
+                          onClick={() =>
+                            showConfirm(
+                              format(t.inventory.deleteConfirm, {
+                                name: i.name,
+                              }),
+                              () => run(del(`/admin/inventory/${i.id}`))
+                            )
+                          }
+                        >
+                          <IconTrashcan size={16} />
+                        </IconButton>
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </Table>
+          )}
+        </>
       ) : (
-        <Table>
-          <thead>
-            <tr>
-              <th>{t.inventory.item}</th>
-              <th data-num>{t.inventory.shouldBeLeft}</th>
-              <th data-num>{t.inventory.counted}</th>
-              <th data-num>{t.inventory.youPay}</th>
-              <th />
-            </tr>
-          </thead>
-          <tbody>
-            {items.map((i) => (
-              <tr key={i.id}>
-                <td>{i.name}</td>
-                <td data-num data-low={i.expectedLeft <= 0 || undefined}>
-                  {units.format(Math.max(0, i.expectedLeft), i.kind)}
-                </td>
-                <td data-num className="tt-muted">
-                  {units.format(i.onHand, i.kind)}
-                </td>
-                <td data-num className="tt-muted">
-                  {format(t.inventory.per, {
-                    price: money(i.packCostCents),
-                    size: units.format(i.packSize, i.kind),
-                  })}
-                </td>
-                <td>
-                  <span className="tt-row" data-end>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setDialog({ kind: 'count', item: i })}
-                    >
-                      {t.inventory.count}
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setDialog({ kind: 'edit', item: i })}
-                    >
-                      {t.edit}
-                    </Button>
-                    <IconButton
-                      size="sm"
-                      label={t.inventory.deleteItem}
-                      onClick={() =>
-                        showConfirm(
-                          format(t.inventory.deleteConfirm, { name: i.name }),
-                          () => run(del(`/admin/inventory/${i.id}`))
-                        )
-                      }
-                    >
-                      <IconTrashcan size={16} />
-                    </IconButton>
-                  </span>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </Table>
+        <>
+          <PeriodPicker
+            period={period}
+            anchor={anchor}
+            days={days}
+            today={today}
+            onChange={(p, a) => {
+              setPeriod(p);
+              setAnchor(a);
+            }}
+          />
+          {history && (
+            <>
+              <div className="tt-stats">
+                <Stat
+                  label={t.inventory.deliveries}
+                  value={money(history.totals.receivedCents)}
+                />
+                <Stat
+                  label={t.inventory.used}
+                  value={money(history.totals.usedCents)}
+                  hint={t.inventory.usedHint}
+                />
+                <Stat
+                  label={t.inventory.offBy}
+                  value={signedMoney(history.totals.diffCents)}
+                />
+              </div>
+              {history.entries.length === 0 ? (
+                <EmptyState>{t.inventory.historyEmpty}</EmptyState>
+              ) : (
+                <>
+                  <Table>
+                    <thead>
+                      <tr>
+                        <th data-action>{t.inventory.date}</th>
+                        <th>{t.inventory.item}</th>
+                        <th data-num>{t.inventory.whatHappened}</th>
+                        <th data-num>{t.inventory.offBy}</th>
+                        <th />
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {history.entries.map((e) => (
+                        <tr key={e.id}>
+                          <td data-action className="tt-muted">
+                            {shortDate(e.businessDate)}
+                          </td>
+                          <td>
+                            <span className="tt-muted">#{e.code}</span> {e.name}
+                          </td>
+                          <td data-num>
+                            {e.entry === 'received'
+                              ? `${format(t.inventory.entryDelivery, { qty: amount(e.qty, e.kind) })} · ${money(e.costCents)}`
+                              : format(t.inventory.entryCount, {
+                                  qty: amount(e.qty, e.kind),
+                                })}
+                          </td>
+                          <td
+                            data-num
+                            data-low={
+                              (e.expected !== null && e.qty < e.expected) ||
+                              undefined
+                            }
+                            className="tt-muted"
+                          >
+                            {e.entry === 'counted' && e.expected !== null
+                              ? offBy(e.qty - e.expected, e.kind)
+                              : ''}
+                          </td>
+                          <td data-action>
+                            <span className="tt-row" data-end>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() =>
+                                  setDialog({ kind: 'entry', entry: e })
+                                }
+                              >
+                                {t.edit}
+                              </Button>
+                              <IconButton
+                                size="sm"
+                                label={t.inventory.deleteEntry}
+                                onClick={() =>
+                                  showConfirm(
+                                    t.inventory.deleteEntryConfirm,
+                                    () =>
+                                      run(
+                                        del(`/admin/inventory/entries/${e.id}`)
+                                      )
+                                  )
+                                }
+                              >
+                                <IconTrashcan size={16} />
+                              </IconButton>
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </Table>
+                </>
+              )}
+            </>
+          )}
+        </>
       )}
 
-      {dialog?.kind === 'count' && (
-        <CountDialog
+      {dialog?.kind === 'item' && (
+        <InventoryDialog
+          // Remount when a scan switches to another item.
+          key={dialog.item.id}
           item={dialog.item}
+          onOpen={(item) => setDialog({ kind: 'item', item })}
           onClose={() => setDialog(null)}
-          onSubmit={(onHand) =>
-            run(patch(`/admin/inventory/${dialog.item.id}`, { onHand }))
+          onSubmit={(body: InventoryBody) =>
+            run(patch(`/admin/inventory/${dialog.item.id}`, body))
           }
         />
       )}
-      {dialog?.kind === 'edit' && (
-        <InventoryDialog
-          // Remount when a scan switches to another item.
-          key={dialog.item?.id ?? 'new'}
-          item={dialog.item}
-          onOpen={(item) => setDialog({ kind: 'edit', item })}
+      {dialog?.kind === 'entry' && (
+        <EntryDialog
+          entry={dialog.entry}
           onClose={() => setDialog(null)}
-          onSubmit={(body) =>
+          onSubmit={(qty, costCents) =>
             run(
-              dialog.item
-                ? patch(`/admin/inventory/${dialog.item.id}`, body)
-                : post('/admin/inventory', body)
+              put('/admin/inventory/entries', {
+                inventoryItemId: dialog.entry.inventoryItemId,
+                kind: dialog.entry.entry,
+                businessDate: dialog.entry.businessDate,
+                qty,
+                ...(costCents !== undefined ? { costCents } : {}),
+              })
             )
           }
         />
@@ -158,187 +352,55 @@ export function AdminInventory() {
   );
 }
 
-function InventoryDialog({
-  item,
-  onOpen,
+/** Fixes one line of the log: the amount, and what was paid for a delivery. */
+function EntryDialog({
+  entry,
   onClose,
   onSubmit,
 }: {
-  item?: InventoryItem;
-  onOpen: (item: InventoryItem) => void;
+  entry: InventoryEntry;
   onClose: () => void;
-  onSubmit: (body: {
-    name: string;
-    kind: Kind;
-    barcode: string | null;
-    packSize: number;
-    packCostCents: number;
-    onHand?: number;
-  }) => void;
+  onSubmit: (qty: number, costCents?: number) => void;
 }) {
   const units = useUnits();
   const t = useT();
-  const [kind, setKind] = useState<Kind>(item?.kind ?? 'weight');
-  const [barcode, setBarcode] = useState(item?.barcode ?? '');
-  const [lookedUp, setLookedUp] = useState(barcode);
-  const [status, setStatus] = useState('');
-  const [name, setName] = useState(item?.name ?? '');
-  const [packSize, setPackSize] = useState(
-    item ? units.toField(item.packSize, item.kind) : ''
-  );
-  const [price, setPrice] = useState(item ? toDollars(item.packCostCents) : '');
-  const [onHand, setOnHand] = useState(
-    item ? units.toField(item.onHand, item.kind) : ''
-  );
-
-  const cents = parseDollars(price);
-  const size = units.fromField(packSize, kind);
-  const have = units.fromField(onHand, kind);
-  const unit = units.label(kind);
-
-  const findBarcode = async () => {
-    const code = barcode.trim();
-    if (!code || code === lookedUp) return;
-    setLookedUp(code);
-    setStatus(t.inventory.lookingUp);
-    const found = await lookup(code);
-    if (found.match && found.match.id !== item?.id) return onOpen(found.match);
-    const s = found.suggestion;
-    if (!s) return setStatus(item ? '' : t.inventory.notFound);
-    if (!name.trim()) setName(s.name);
-    if (s.kind) setKind(s.kind);
-    if (s.kind && s.packSize && !packSize) {
-      setPackSize(units.toField(s.packSize, s.kind));
-    }
-    setStatus(t.inventory.foundOnline);
-  };
-
+  const [value, setValue] = useState(units.toField(entry.qty, entry.kind));
+  const [paid, setPaid] = useState(toDollars(entry.costCents));
+  const qty = units.fromField(value, entry.kind);
+  const cents = parseDollars(paid);
+  const received = entry.entry === 'received';
   return (
     <FormDialog
-      title={item ? t.inventory.editTitle : t.inventory.newTitle}
+      title={`${shortDate(entry.businessDate)} · ${entry.name}`}
       onClose={onClose}
       onSubmit={() =>
-        name.trim() &&
-        cents !== null &&
-        size !== null &&
-        size > 0 &&
-        have !== null &&
-        onSubmit({
-          name: name.trim(),
-          kind,
-          barcode: barcode.trim() || null,
-          packSize: size,
-          packCostCents: cents,
-          // Only send a count when it changed, so editing a name doesn't
-          // restart the usage count.
-          ...(item && onHand === units.toField(item.onHand, item.kind)
-            ? {}
-            : { onHand: have }),
-        })
+        qty !== null &&
+        (!received || cents !== null) &&
+        onSubmit(qty, received ? (cents ?? undefined) : undefined)
       }
     >
       <Input
-        label={t.inventory.barcode}
-        value={barcode}
-        onChange={(e) => setBarcode(e.target.value)}
-        // Scanners type the code and press enter; don't submit the form.
-        onKeyDown={(e) => {
-          if (e.key === 'Enter') {
-            e.preventDefault();
-            findBarcode();
-          }
-        }}
-        onBlur={findBarcode}
-        hint={status || t.inventory.barcodeHint}
-        autoFocus={!item}
-      />
-      <Input
-        label={t.name}
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-        required
-      />
-      <Select
-        label={t.inventory.measuredBy}
-        value={kind}
-        onChange={(e) => setKind(e.target.value as Kind)}
-        options={[
-          {
-            value: 'weight',
-            label: format(t.inventory.weight, { unit: units.label('weight') }),
-          },
-          {
-            value: 'liquid',
-            label: format(t.inventory.volume, { unit: units.label('liquid') }),
-          },
-          {
-            value: 'count',
-            label: format(t.inventory.byCount, { unit: units.label('count') }),
-          },
-        ]}
-      />
-      <div className="tt-row">
-        <Input
-          label={format(t.inventory.youBuy, { unit })}
-          inputMode="decimal"
-          value={packSize}
-          onChange={(e) => setPackSize(e.target.value)}
-          error={packSize && !size ? t.notAmount : undefined}
-          required
-        />
-        <Input
-          label={t.inventory.for}
-          inputMode="decimal"
-          value={price}
-          onChange={(e) => setPrice(e.target.value)}
-          error={price && cents === null ? t.notPrice : undefined}
-          required
-        />
-      </div>
-      <Input
-        label={format(t.inventory.youHave, { unit })}
-        inputMode="decimal"
-        value={onHand}
-        onChange={(e) => setOnHand(e.target.value)}
-        error={onHand && have === null ? t.notAmount : undefined}
-        hint={t.inventory.freshCount}
-        required
-      />
-    </FormDialog>
-  );
-}
-
-function CountDialog({
-  item,
-  onClose,
-  onSubmit,
-}: {
-  item: InventoryItem;
-  onClose: () => void;
-  onSubmit: (onHand: number) => void;
-}) {
-  const units = useUnits();
-  const t = useT();
-  const [value, setValue] = useState(
-    units.toField(Math.max(0, item.expectedLeft), item.kind)
-  );
-  const have = units.fromField(value, item.kind);
-  return (
-    <FormDialog
-      title={format(t.inventory.countTitle, { name: item.name })}
-      onClose={onClose}
-      onSubmit={() => have !== null && onSubmit(have)}
-    >
-      <Input
-        label={format(t.inventory.youHave, { unit: units.label(item.kind) })}
+        label={units.named(
+          received ? t.inventory.cameIn : t.inventory.onShelf,
+          entry.kind
+        )}
         inputMode="decimal"
         value={value}
         onChange={(e) => setValue(e.target.value)}
-        error={value && have === null ? t.notAmount : undefined}
-        hint={t.inventory.countHint}
+        error={value && qty === null ? t.notAmount : undefined}
         autoFocus
         required
       />
+      {received && (
+        <Input
+          label={t.inventory.paid}
+          inputMode="decimal"
+          value={paid}
+          onChange={(e) => setPaid(e.target.value)}
+          error={paid && cents === null ? t.notPrice : undefined}
+          required
+        />
+      )}
     </FormDialog>
   );
 }

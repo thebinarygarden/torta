@@ -85,6 +85,21 @@ p {
   letter-spacing: var(--tracking-label);
   color: var(--text-muted);
 }
+/* One figure over a table: "stock value $178.50". */
+.tt-total {
+  display: flex;
+  justify-content: center;
+  align-items: baseline;
+  gap: var(--space-2);
+  margin: 0;
+}
+.tt-total strong {
+  font: var(--type-h2);
+  font-variant-numeric: tabular-nums;
+}
+.tt-accent {
+  color: var(--accent);
+}
 .tt-money {
   font-variant-numeric: tabular-nums;
 }
@@ -415,6 +430,14 @@ p {
   color: var(--danger);
 }
 
+/* Kitchen stats: today's completed orders and their average time */
+.tt-kitchen-stats {
+  margin: 0;
+  padding: var(--space-2) var(--gutter);
+  border-bottom: 1px solid var(--border-default);
+  font-variant-numeric: tabular-nums;
+}
+
 /* Admin shell */
 .tt-admin {
   display: grid;
@@ -436,13 +459,66 @@ p {
     min-height: 100%;
   }
 }
+/* Below 800px the sidebar folds into a menu that drops down under a top bar,
+   on the same blurred glass as flora's SiteHeader. */
+.tt-admin-bar {
+  display: none;
+}
 @media (max-width: 799px) {
-  /* Stacked on top at phone width: full width, no resizing. */
+  .tt-admin {
+    align-content: start;
+  }
+  .tt-admin-bar,
+  .tt-admin-nav[data-open='true'] {
+    background: oklch(from var(--surface-page) l c h / 0.8);
+    backdrop-filter: blur(var(--blur-overlay));
+  }
+  .tt-admin-bar {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    height: 60px;
+    padding: 0 var(--gutter);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    border-bottom: 1px solid var(--border-default);
+  }
+  .tt-admin-nav {
+    display: none;
+  }
+  .tt-admin-nav[data-open='true'] {
+    display: block;
+    position: fixed;
+    top: 61px;
+    left: 0;
+    right: 0;
+    z-index: 20;
+    max-height: calc(100dvh - 61px);
+    overflow: auto;
+    border-bottom: 1px solid var(--border-default);
+    animation: tt-menu-drop var(--dur-2) var(--ease-out);
+  }
   .tt-admin-nav .fl-side {
     width: 100%;
+    background: transparent;
   }
+  /* The brand is already in the bar. */
+  .tt-admin-nav .fl-side-top,
   .tt-admin-nav .fl-side-handle {
     display: none;
+  }
+}
+@keyframes tt-menu-drop {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tt-admin-nav[data-open='true'] {
+    animation: none;
   }
 }
 .tt-admin-main {
@@ -493,6 +569,31 @@ p {
 }
 .tt-item-head strong {
   font-weight: 500;
+}
+.tt-item-badge {
+  margin-left: var(--space-2);
+  vertical-align: middle;
+}
+/* The box on each count row: wide enough for the placeholder and a number. */
+.tt-count-field .fl-field {
+  width: 10rem;
+}
+/* Items that match what was typed into the delivery box. */
+.tt-suggestion {
+  display: block;
+  width: 100%;
+  padding: var(--space-2);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.tt-suggestion:hover,
+.tt-suggestion:focus-visible {
+  background: var(--surface-sunken);
 }
 .tt-item-section {
   display: flex;
@@ -687,6 +788,10 @@ p {
 .fl-table td[data-low] {
   color: var(--danger);
   font-weight: var(--weight-medium);
+}
+/* Row buttons stay on one line in a shrunk action cell. */
+.fl-table td[data-action] .tt-row {
+  flex-wrap: nowrap;
 }
 /* Ingredient changes in the order cart, like no onion or extra salsa. */
 .tt-changes {

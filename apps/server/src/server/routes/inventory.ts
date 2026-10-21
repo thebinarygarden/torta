@@ -1,9 +1,16 @@
 import { and, eq, ne } from 'drizzle-orm';
 import { Hono } from 'hono';
-import { inventoryInput, inventoryPatch } from '@torta/shared';
+import { entryInput, inventoryInput, inventoryPatch } from '@torta/shared';
 import { schema } from '../../db';
 import { json, requireAdmin, type AppDeps, type AppEnv } from '../context';
-import { listInventory, lookupBarcode } from '../inventory';
+import { isIsoDate, localDate } from '../dates';
+import {
+  deleteEntry,
+  inventoryHistory,
+  listInventory,
+  lookupBarcode,
+  putEntry,
+} from '../inventory';
 
 export function inventoryRoutes({ db, broadcast, version }: AppDeps) {
   // Scoped to /admin/inventory; see the note in routes/orders.ts.
@@ -34,9 +41,30 @@ export function inventoryRoutes({ db, broadcast, version }: AppDeps) {
 
   app.get('/admin/inventory', async (c) => c.json(await listInventory(db)));
 
-  app.get('/admin/inventory/barcode/:code', async (c) =>
+  app.get('/admin/inventory/lookup/:code', async (c) =>
     c.json(await lookupBarcode(db, c.req.param('code'), version))
   );
+
+  app.get('/admin/inventory/history', async (c) => {
+    const today = localDate();
+    const from = c.req.query('from') ?? today;
+    const to = c.req.query('to') ?? from;
+    if (!isIsoDate(from) || !isIsoDate(to) || from > to) {
+      return c.json({ error: 'invalid_input', message: 'from/to' }, 400);
+    }
+    return c.json(await inventoryHistory(db, from, to));
+  });
+
+  app.put('/admin/inventory/entries', json(entryInput), async (c) =>
+    c.json(await putEntry(db, c.req.valid('json')))
+  );
+
+  app.delete('/admin/inventory/entries/:id', async (c) => {
+    if (!(await deleteEntry(db, c.req.param('id')))) {
+      return c.json({ error: 'not_found' }, 404);
+    }
+    return c.json({ ok: true });
+  });
 
   app.post('/admin/inventory', json(inventoryInput), async (c) => {
     if (await barcodeTaken(c.req.valid('json').barcode)) {
@@ -56,10 +84,7 @@ export function inventoryRoutes({ db, broadcast, version }: AppDeps) {
     }
     const [row] = await db
       .update(schema.inventoryItems)
-      // Setting what's on hand is a fresh count: usage is measured from now.
-      .set(
-        input.onHand === undefined ? input : { ...input, countedAt: new Date() }
-      )
+      .set(input)
       .where(eq(schema.inventoryItems.id, c.req.param('id')))
       .returning();
     if (!row) return c.json({ error: 'not_found' }, 404);

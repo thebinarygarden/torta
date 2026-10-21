@@ -1,6 +1,8 @@
 import { Navigate, Route, Routes } from 'react-router';
 import { getSurface } from './api/auth';
 import { AdminInventory } from './routes/admin/inventory';
+import { AdminInventoryCount } from './routes/admin/inventory-count';
+import { AdminInventoryDelivery } from './routes/admin/inventory-delivery';
 import { AdminLayout } from './routes/admin/layout';
 import { AdminMenu } from './routes/admin/menu';
 import { AdminOverview } from './routes/admin/overview';
@@ -26,6 +28,12 @@ export function App() {
         <Route path="menu" element={<AdminMenu />} />
         <Route path="menu/:categoryId" element={<AdminMenu />} />
         <Route path="inventory" element={<AdminInventory />} />
+        <Route path="inventory/delivery" element={<AdminInventoryDelivery />} />
+        <Route path="inventory/count" element={<AdminInventoryCount />} />
+        <Route
+          path="inventory/update"
+          element={<Navigate to="/admin/inventory" replace />}
+        />
         <Route path="sales" element={<AdminSales />} />
         <Route path="sales/new" element={<AdminSaleNew />} />
         <Route path="settings" element={<AdminSettings />} />
