@@ -311,6 +311,8 @@
     "updated": "actualizado",
     "heard": "enterado",
     "took": "tardó {time}",
+    "ordersToday": "{n} pedidos hoy",
+    "avgTime": "promedio {time}",
     "cancelledAt": "cancelado a las {time}",
     "reopen": "reabrir",
     "completedAt": "terminado a las {time}",

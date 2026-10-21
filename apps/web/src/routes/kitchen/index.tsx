@@ -65,9 +65,8 @@ export function Kitchen() {
       .then(setDone)
       .catch(() => {});
   }, []);
-  useEffect(() => {
-    if (view === 'done') loadDone();
-  }, [view, loadDone]);
+  // Loaded up front too, since the stats bar counts today's finished orders.
+  useEffect(loadDone, [loadDone]);
 
   // Every write comes back here, so both lists follow one order's status.
   const place = useCallback((order: Order) => {
@@ -85,7 +84,7 @@ export function Kitchen() {
   useRealtime((e: ServerEvent) => {
     if (e.type === 'hello') {
       load();
-      if (view === 'done') loadDone();
+      loadDone();
     }
     if (e.type === 'order.created' || e.type === 'order.updated') {
       place(e.order);
@@ -144,6 +143,22 @@ export function Kitchen() {
     );
   }, [orders]);
 
+  // Today's completed orders and how long they took on average. Orders entered
+  // after the fact complete the moment they're created, so they're left out of
+  // the average.
+  const stats = useMemo(() => {
+    const completed = (done ?? []).filter((o) => o.status === 'completed');
+    const times = completed
+      .map((o) => Date.parse(o.completedAt ?? '') - Date.parse(o.createdAt))
+      .filter((ms) => ms > 0);
+    return {
+      count: completed.length,
+      avgMs: times.length
+        ? times.reduce((a, b) => a + b, 0) / times.length
+        : null,
+    };
+  }, [done]);
+
   const time = (iso: string) =>
     new Date(iso).toLocaleTimeString(undefined, {
       hour: 'numeric',
@@ -162,6 +177,15 @@ export function Kitchen() {
           { value: 'done', label: t.kitchen.done },
         ]}
       />
+      {done && (
+        <p className="tt-kitchen-stats tt-small">
+          {format(t.kitchen.ordersToday, { n: stats.count })}
+          {' · '}
+          {format(t.kitchen.avgTime, {
+            time: stats.avgMs === null ? '—' : elapsed(stats.avgMs),
+          })}
+        </p>
+      )}
       <main className="tt-main">
         {view === 'done' ? (
           done === null ? (

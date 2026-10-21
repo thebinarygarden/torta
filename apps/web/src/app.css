@@ -415,6 +415,14 @@ p {
   color: var(--danger);
 }
 
+/* Kitchen stats: today's completed orders and their average time */
+.tt-kitchen-stats {
+  margin: 0;
+  padding: var(--space-2) var(--gutter);
+  border-bottom: 1px solid var(--border-default);
+  font-variant-numeric: tabular-nums;
+}
+
 /* Admin shell */
 .tt-admin {
   display: grid;

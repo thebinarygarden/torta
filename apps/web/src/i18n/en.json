@@ -311,6 +311,8 @@
     "updated": "updated",
     "heard": "heard",
     "took": "took {time}",
+    "ordersToday": "{n} orders today",
+    "avgTime": "avg {time}",
     "cancelledAt": "cancelled at {time}",
     "reopen": "reopen",
     "completedAt": "done at {time}",
