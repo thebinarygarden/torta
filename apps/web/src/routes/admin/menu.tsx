@@ -17,7 +17,7 @@ import {
 } from '@binarygarden/flora/form';
 import { IconPlus, IconTrashcan } from '@binarygarden/flora/icons';
 import { useDialog, useToast } from '@binarygarden/flora/overlay';
-import { Card, EmptyState } from '@binarygarden/flora/ui';
+import { Badge, Card, EmptyState } from '@binarygarden/flora/ui';
 import { del, get, patch, post } from '../../api/http';
 import { choiceLabel, groupRule } from '../../components/choices';
 import { useHealth } from '../../components/health';
@@ -54,6 +54,12 @@ export function AdminMenu() {
       .then(setInventory)
       .catch(() => {});
   }, []);
+  // Once inventory exists, an ingredient that isn't linked to it is a gap:
+  // selling the item won't touch stock.
+  const tracked = (ing: Ingredient) =>
+    ing.inventoryItemId != null && ing.qty != null;
+  const inInventory = (item: Item) =>
+    item.ingredients.length > 0 && item.ingredients.every(tracked);
   const amount = (ing: Ingredient) => {
     const inv = inventory.find((i) => i.id === ing.inventoryItemId);
     return inv && ing.qty != null
@@ -161,7 +167,14 @@ export function AdminMenu() {
             <Card key={item.id} padding="md">
               <div className="tt-item-row">
                 <div className="tt-item-head">
-                  <strong className="tt-grow">{item.name}</strong>
+                  <strong className="tt-grow">
+                    {item.name}
+                    {inventory.length > 0 && !inInventory(item) && (
+                      <Badge tone="accent" className="tt-item-badge">
+                        {t.menu.notInInventory}
+                      </Badge>
+                    )}
+                  </strong>
                   <span className="tt-money">{money(item.priceCents)}</span>
                   <Switch
                     size="sm"
@@ -219,6 +232,12 @@ export function AdminMenu() {
                           <span>
                             {ing.name}
                             <span className="tt-muted">{amount(ing)}</span>
+                            {inventory.length > 0 && !tracked(ing) && (
+                              <span className="tt-accent">
+                                {' · '}
+                                {t.menu.notTracked}
+                              </span>
+                            )}
                           </span>
                           <span className="tt-row">
                             <span className="tt-small tt-muted">
@@ -766,12 +785,11 @@ function IngredientDialog({
           />
           {linked && (
             <Input
-              label={format(t.menu.amountPerItem, {
-                unit: units.label(linked.kind),
-              })}
+              label={units.named(t.menu.amountPerItem, linked.kind)}
               inputMode="decimal"
               value={qty}
               onChange={(e) => setQty(e.target.value)}
+              hint={t.menu.amountHint}
               error={qty && !(base && base > 0) ? t.notAmount : undefined}
               required
             />

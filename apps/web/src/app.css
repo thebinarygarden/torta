@@ -85,6 +85,21 @@ p {
   letter-spacing: var(--tracking-label);
   color: var(--text-muted);
 }
+/* One figure over a table: "stock value $178.50". */
+.tt-total {
+  display: flex;
+  justify-content: center;
+  align-items: baseline;
+  gap: var(--space-2);
+  margin: 0;
+}
+.tt-total strong {
+  font: var(--type-h2);
+  font-variant-numeric: tabular-nums;
+}
+.tt-accent {
+  color: var(--accent);
+}
 .tt-money {
   font-variant-numeric: tabular-nums;
 }
@@ -502,6 +517,31 @@ p {
 .tt-item-head strong {
   font-weight: 500;
 }
+.tt-item-badge {
+  margin-left: var(--space-2);
+  vertical-align: middle;
+}
+/* The box on each count row: wide enough for the placeholder and a number. */
+.tt-count-field .fl-field {
+  width: 10rem;
+}
+/* Items that match what was typed into the delivery box. */
+.tt-suggestion {
+  display: block;
+  width: 100%;
+  padding: var(--space-2);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.tt-suggestion:hover,
+.tt-suggestion:focus-visible {
+  background: var(--surface-sunken);
+}
 .tt-item-section {
   display: flex;
   flex-direction: column;
@@ -695,6 +735,10 @@ p {
 .fl-table td[data-low] {
   color: var(--danger);
   font-weight: var(--weight-medium);
+}
+/* Row buttons stay on one line in a shrunk action cell. */
+.fl-table td[data-action] .tt-row {
+  flex-wrap: nowrap;
 }
 /* Ingredient changes in the order cart, like no onion or extra salsa. */
 .tt-changes {

@@ -16,6 +16,7 @@ import {
 } from 'drizzle-orm/pg-core';
 import type {
   Currency,
+  EntryKind,
   Kind,
   LiquidUnit,
   OrderModifier,
@@ -111,15 +112,46 @@ export const modifiers = pgTable('modifiers', {
 // Amounts are in base units: grams, millilitres or a count.
 export const inventoryItems = pgTable('inventory_items', {
   id: id(),
+  // A short number for items without a barcode, shown as #42.
+  code: integer('code').notNull().unique().generatedByDefaultAsIdentity(),
   name: text('name').notNull(),
   kind: text('kind').$type<Kind>().notNull(),
   barcode: text('barcode').unique(),
   packSize: doublePrecision('pack_size').notNull(),
   packCostCents: integer('pack_cost_cents').notNull(),
+  // Unused since stock became a ledger. Kept because migrations are additive.
   onHand: doublePrecision('on_hand').notNull().default(0),
   countedAt: ts('counted_at').defaultNow().notNull(),
   createdAt: createdAt(),
 });
+
+/**
+ * The stock ledger. A received line is what came in; a counted line is what
+ * the shelf held. One line per item, kind and day: saving again replaces it.
+ */
+export const inventoryEntries = pgTable(
+  'inventory_entries',
+  {
+    id: id(),
+    inventoryItemId: uuid('inventory_item_id')
+      .notNull()
+      .references(() => inventoryItems.id, { onDelete: 'cascade' }),
+    kind: text('kind').$type<EntryKind>().notNull(),
+    qty: doublePrecision('qty').notNull(),
+    // What a delivery cost. Counts carry no money.
+    costCents: integer('cost_cents').notNull().default(0),
+    businessDate: date('business_date').notNull(),
+    createdAt: createdAt(),
+    updatedAt: ts('updated_at').defaultNow().notNull(),
+  },
+  (t) => [
+    uniqueIndex('inventory_entries_day').on(
+      t.inventoryItemId,
+      t.kind,
+      t.businessDate
+    ),
+  ]
+);
 
 export const ingredients = pgTable('ingredients', {
   id: id(),

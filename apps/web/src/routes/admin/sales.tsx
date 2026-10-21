@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useOutletContext, useSearchParams } from 'react-router';
 import type { Order, SalesSummary } from '@torta/shared';
 import { Button, IconButton } from '@binarygarden/flora/form';
-import { IconArrow, IconPlus, IconTrashcan } from '@binarygarden/flora/icons';
+import { IconPlus, IconTrashcan } from '@binarygarden/flora/icons';
 import { Tabs } from '@binarygarden/flora/navigation';
 import { useDialog, useToast } from '@binarygarden/flora/overlay';
 import {
@@ -15,15 +15,19 @@ import {
 } from '@binarygarden/flora/ui';
 import { del, get } from '../../api/http';
 import { useRealtime } from '../../api/ws';
-import { isoDate, parseDate } from '../../components/dates';
+import {
+  daysOf,
+  isoDate,
+  parseDate,
+  type Period,
+} from '../../components/dates';
 import { useHealth } from '../../components/health';
 import { formatCents } from '../../components/money';
 import { orderLabel } from '../../components/order-title';
-import { useUnits } from '../../components/units';
+import { PeriodPicker } from '../../components/period-picker';
 import { errorMessage, format, useT } from '../../i18n';
 import type { AdminContext } from './layout';
 
-type Period = 'day' | 'week' | 'month';
 type Tab = 'orders' | 'items';
 
 const hourOf = (o: Order) => new Date(o.createdAt).getHours();
@@ -31,48 +35,6 @@ const hourOf = (o: Order) => new Date(o.createdAt).getHours();
 /** "2 pm", in the browser's own clock format. */
 const hourLabel = (h: number) =>
   new Date(2000, 0, 1, h).toLocaleTimeString(undefined, { hour: 'numeric' });
-
-/** The days of the period holding `anchor`. Weeks start on Monday. */
-function daysOf(period: Period, anchor: Date): Date[] {
-  const y = anchor.getFullYear();
-  const m = anchor.getMonth();
-  const d = anchor.getDate();
-  if (period === 'day') return [new Date(y, m, d)];
-  if (period === 'week') {
-    const monday = d - ((anchor.getDay() + 6) % 7);
-    return Array.from({ length: 7 }, (_, n) => new Date(y, m, monday + n));
-  }
-  const length = new Date(y, m + 1, 0).getDate();
-  return Array.from({ length }, (_, n) => new Date(y, m, n + 1));
-}
-
-function step(period: Period, anchor: Date, by: number) {
-  const d = new Date(anchor);
-  if (period === 'day') d.setDate(d.getDate() + by);
-  else if (period === 'week') d.setDate(d.getDate() + 7 * by);
-  else d.setMonth(d.getMonth() + by, 1);
-  return d;
-}
-
-function periodLabel(period: Period, days: Date[]) {
-  if (period === 'day') {
-    return days[0]!.toLocaleDateString(undefined, {
-      weekday: 'short',
-      month: 'short',
-      day: 'numeric',
-    });
-  }
-  if (period === 'week') {
-    return new Intl.DateTimeFormat(undefined, {
-      month: 'short',
-      day: 'numeric',
-    }).formatRange(days[0]!, days.at(-1)!);
-  }
-  return days[0]!.toLocaleDateString(undefined, {
-    month: 'long',
-    year: 'numeric',
-  });
-}
 
 /** "Ana" and "ana " are the same customer. */
 const customerKey = (o: Order) => o.customerName?.trim().toLowerCase() ?? null;
@@ -120,7 +82,6 @@ export function AdminSales() {
   const { showToast } = useToast();
   const t = useT();
   const money = (c: number) => formatCents(c, health.currency);
-  const units = useUnits();
 
   // Read once on mount: the clock is not read during render.
   const [today] = useState(() => isoDate(new Date()));
@@ -326,43 +287,13 @@ export function AdminSales() {
       <div className="tt-row" data-between>
         <h1>{t.sales.title}</h1>
         <div className="tt-row">
-          <Tabs
-            variant="pill"
-            value={period}
-            onChange={(v) => go(v as Period, anchor)}
-            items={[
-              { value: 'day', label: t.sales.day },
-              { value: 'week', label: t.sales.week },
-              { value: 'month', label: t.sales.month },
-            ]}
+          <PeriodPicker
+            period={period}
+            anchor={anchor}
+            days={days}
+            today={today}
+            onChange={go}
           />
-          <div className="tt-pager">
-            <IconButton
-              size="sm"
-              label={t.sales.previous}
-              onClick={() => go(period, step(period, anchor, -1))}
-            >
-              <IconArrow orientation="left" size={14} />
-            </IconButton>
-            <span className="tt-period">{periodLabel(period, days)}</span>
-            <IconButton
-              size="sm"
-              label={t.sales.next}
-              disabled={to >= today}
-              onClick={() => go(period, step(period, anchor, 1))}
-            >
-              <IconArrow orientation="right" size={14} />
-            </IconButton>
-            <span className="tt-pager-divider" aria-hidden="true" />
-            <Button
-              size="sm"
-              variant="ghost"
-              disabled={to >= today}
-              onClick={() => go(period, new Date())}
-            >
-              {t.sales.today}
-            </Button>
-          </div>
         </div>
       </div>
       {sales && (
@@ -392,7 +323,7 @@ export function AdminSales() {
                 value={money(sales.taxCents)}
               />
             )}
-            {sales.usage.length > 0 && (
+            {(sales.costCents > 0 || sales.wasteCents > 0) && (
               <>
                 <Stat
                   data-money
@@ -679,40 +610,6 @@ export function AdminSales() {
               )}
             </div>
           </Card>
-          {sales.usage.length > 0 && (
-            <Card title={t.sales.ingredientsUsed} padding="md">
-              <Table>
-                <thead>
-                  <tr>
-                    <th>{t.sales.ingredient}</th>
-                    <th data-num>{t.sales.used}</th>
-                    <th data-num>{t.sales.cost}</th>
-                    <th data-num>{t.sales.shouldBeLeft}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {sales.usage.map((u) => (
-                    <tr key={u.inventoryItemId}>
-                      <td>{u.name}</td>
-                      <td data-num>{units.format(u.qty, u.kind)}</td>
-                      <td data-num>{money(u.costCents)}</td>
-                      <td
-                        data-num
-                        data-low={
-                          (u.expectedLeft !== null && u.expectedLeft <= 0) ||
-                          undefined
-                        }
-                      >
-                        {u.expectedLeft === null
-                          ? '—'
-                          : units.format(Math.max(0, u.expectedLeft), u.kind)}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </Table>
-            </Card>
-          )}
         </>
       )}
     </>

@@ -4,7 +4,6 @@ import {
   liquidUnit,
   weightUnit,
   type Currency,
-  type Kind,
   type LiquidUnit,
   type WeightUnit,
 } from './units';
@@ -52,12 +51,4 @@ export type SalesSummary = {
   costCents: number;
   /** Food made for orders that were then cancelled. */
   wasteCents: number;
-  usage: {
-    inventoryItemId: string;
-    name: string;
-    kind: Kind;
-    qty: number;
-    costCents: number;
-    expectedLeft: number | null;
-  }[];
 };

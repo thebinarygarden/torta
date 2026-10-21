@@ -16,6 +16,12 @@ It is a [Binary Garden](https://binarygarden.com) product.
   and after that it only stores a device token.
 - **The owner manages everything from the laptop window**, under `/admin`: the menu, sales,
   paired devices and settings.
+- **Stock is a ledger.** Every item has a short `#code`, barcode or not. A delivery screen
+  takes what came in and what it cost, by scan or by code; a count screen lists every item
+  for what the shelf holds. Lines apply in the order they are typed, every line can be fixed
+  later from the history, and the inventory page shows what is on hand, what it is worth and
+  how far the last count was off. Menu items that don't draw from inventory are flagged on
+  the menu.
 - **No internet is required.** When the laptop is online, scanning a new barcode into
   inventory asks [Open Food Facts](https://world.openfoodfacts.org) for the product's name
   and size; offline, the owner types them.

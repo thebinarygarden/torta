@@ -2,7 +2,7 @@ import { and, gte, inArray, lte } from 'drizzle-orm';
 import type { SalesSummary } from '@torta/shared';
 import type { Db } from '../db';
 import { schema } from '../db';
-import { foodUsed, listInventory } from './inventory';
+import { foodUsed } from './inventory';
 
 export async function salesSummary(
   db: Db,
@@ -33,7 +33,6 @@ export async function salesSummary(
     taxCents: 0,
     costCents: 0,
     wasteCents: 0,
-    usage: [],
   };
   for (const r of rows) {
     summary.grossCents += r.totalCents;
@@ -54,32 +53,11 @@ export async function salesSummary(
   const cancelled = new Set(
     used.filter((r) => r.status === 'cancelled').map((r) => r.id)
   );
-  const byInventory = new Map<string, SalesSummary['usage'][number]>();
   for (const i of items) {
     for (const u of i.usage) {
       if (cancelled.has(i.orderId)) summary.wasteCents += u.costCents;
       else summary.costCents += u.costCents;
-      const t = byInventory.get(u.inventoryItemId) ?? {
-        inventoryItemId: u.inventoryItemId,
-        name: u.name,
-        kind: u.kind,
-        qty: 0,
-        costCents: 0,
-        expectedLeft: null,
-      };
-      t.qty += u.qty;
-      t.costCents += u.costCents;
-      byInventory.set(u.inventoryItemId, t);
     }
-  }
-  if (byInventory.size > 0) {
-    for (const inv of await listInventory(db)) {
-      const t = byInventory.get(inv.id);
-      if (t) t.expectedLeft = inv.expectedLeft;
-    }
-    summary.usage = [...byInventory.values()].sort(
-      (a, b) => b.costCents - a.costCents
-    );
   }
 
   return summary;

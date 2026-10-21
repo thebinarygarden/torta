@@ -13,6 +13,7 @@ import {
   type IngredientChoice,
   type Order,
 } from '@torta/shared';
+import { localDate } from '../src/server/dates';
 import { client, makeApp, seedMenu, setup } from './helpers';
 
 const ctx = await makeApp();
@@ -149,10 +150,23 @@ describe('ingredients and inventory', () => {
         barcode: '0001',
         packSize: 5000,
         packCostCents: 4000,
-        onHand: 3000,
       })
     ).body;
-    expect(beef).toMatchObject({ onHand: 3000, expectedLeft: 3000 });
+    // Every item gets a short number, barcode or not.
+    expect(beef).toMatchObject({ code: 1, expectedLeft: 0, lastCount: null });
+    // Counted yesterday, so today's orders come after it.
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    await api.put('/admin/inventory/entries', {
+      inventoryItemId: beef.id,
+      kind: 'counted',
+      qty: 3000,
+      businessDate: localDate(yesterday),
+    });
+    expect((await inventory())[0]).toMatchObject({
+      expectedLeft: 3000,
+      lastCount: { qty: 3000, diff: null },
+    });
     beefIngredient = (
       await api.post(`/admin/items/${menu.taco.id}/ingredients`, {
         name: 'beef',
@@ -166,9 +180,6 @@ describe('ingredients and inventory', () => {
     expect((await inventory())[0].expectedLeft).toBe(2760);
     const sales = await today();
     expect(sales.costCents).toBe(192);
-    expect(sales.usage).toEqual([
-      expect.objectContaining({ name: 'beef', qty: 240, expectedLeft: 2760 }),
-    ]);
   });
 
   test('left-off ingredients and open orders use nothing', async () => {
@@ -214,11 +225,19 @@ describe('ingredients and inventory', () => {
     expect(sales.employeeMeals).toBe(1);
   });
 
-  test('counting stock starts usage over', async () => {
-    const res = await api.patch(`/admin/inventory/${beef.id}`, {
-      onHand: 4000,
+  test('counting stock starts usage over and records the difference', async () => {
+    const res = await api.put('/admin/inventory/entries', {
+      inventoryItemId: beef.id,
+      kind: 'counted',
+      qty: 4000,
     });
-    expect(res.body).toMatchObject({ onHand: 4000, expectedLeft: 4000 });
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({ entry: 'counted', expected: 2520 });
+    expect((await inventory())[0]).toMatchObject({
+      expectedLeft: 4000,
+      valueCents: 3200,
+      lastCount: { qty: 4000, diff: 1480 },
+    });
   });
 
   test('extra adds its price and a second portion; on the side the same', async () => {
@@ -245,15 +264,23 @@ describe('ingredients and inventory', () => {
       barcode: '0001',
       packSize: 1,
       packCostCents: 1,
-      onHand: 0,
     });
     expect(res.status).toBe(409);
   });
 
-  test('a known barcode opens the item; a new one asks Open Food Facts', async () => {
-    expect((await api.get('/admin/inventory/barcode/0001')).body.match.id).toBe(
-      beef.id
-    );
+  test('a barcode or a #code opens the item; a new barcode asks Open Food Facts', async () => {
+    const lookup = async (code: string) =>
+      (await api.get(`/admin/inventory/lookup/${encodeURIComponent(code)}`))
+        .body;
+    expect((await lookup('0001')).match.id).toBe(beef.id);
+    expect((await lookup('1')).match.id).toBe(beef.id);
+    expect((await lookup('#1')).match.id).toBe(beef.id);
+
+    // A mistyped short code never waits on the network.
+    const fetchSpy = vi.fn();
+    vi.stubGlobal('fetch', fetchSpy);
+    expect(await lookup('7')).toEqual({});
+    expect(fetchSpy).not.toHaveBeenCalled();
 
     vi.stubGlobal(
       'fetch',
@@ -267,7 +294,7 @@ describe('ingredients and inventory', () => {
         })
       )
     );
-    expect((await api.get('/admin/inventory/barcode/0002')).body).toEqual({
+    expect(await lookup('00000002')).toEqual({
       suggestion: { name: 'whole milk', kind: 'liquid', packSize: 1000 },
     });
 
@@ -277,7 +304,7 @@ describe('ingredients and inventory', () => {
         throw new Error('offline');
       })
     );
-    expect((await api.get('/admin/inventory/barcode/0003')).body).toEqual({});
+    expect(await lookup('00000003')).toEqual({});
   });
 
   test('deleting stock unlinks ingredients and drops their quantity', async () => {
