@@ -513,6 +513,9 @@ describe('menu, orders and sales', () => {
       orderType: 'dine_in',
     });
     expect(edited.body.orderType).toBe('dine_in');
+    // An edit that names no type keeps the one the order has.
+    const kept = await api.put(`/orders/${picked.id}`, { items });
+    expect(kept.body.orderType).toBe('dine_in');
     expect(
       (await api.post('/orders', { items, orderType: 'drive_thru' })).status
     ).toBe(400);

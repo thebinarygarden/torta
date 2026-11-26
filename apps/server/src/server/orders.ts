@@ -305,7 +305,12 @@ export async function editOrder(
     if (!isActive(existing)) {
       throw new ApiError(409, 'bad_transition', existing.status);
     }
-    const { lines, orderType, totals } = await priceLines(tx, input);
+    // A tablet that sends no type, like one still on the page from before
+    // an update, keeps the type the order already has.
+    const { lines, orderType, totals } = await priceLines(tx, {
+      ...input,
+      orderType: input.orderType ?? existing.orderType ?? undefined,
+    });
     const now = new Date();
     const [row] = await tx
       .update(schema.orders)
