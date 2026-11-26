@@ -18,6 +18,7 @@ import type {
   Currency,
   EntryKind,
   Kind,
+  OrderType,
   LiquidUnit,
   OrderModifier,
   OrderIngredient,
@@ -59,6 +60,12 @@ export const settings = pgTable(
     weightUnit: text('weight_unit').$type<WeightUnit>().notNull().default('g'),
     liquidUnit: text('liquid_unit').$type<LiquidUnit>().notNull().default('ml'),
     autoUpdate: boolean('auto_update').notNull().default(true),
+    // Off saves orders with no type; the default is kept for when it's back on.
+    orderTypesEnabled: boolean('order_types_enabled').notNull().default(true),
+    defaultOrderType: text('default_order_type')
+      .$type<OrderType>()
+      .notNull()
+      .default('to_go'),
     updatedAt: ts('updated_at').defaultNow().notNull(),
     // Unused. Kept because migrations are additive.
     bgUserId: text('bg_user_id'),
@@ -212,6 +219,8 @@ export const orders = pgTable(
     editedAt: ts('edited_at'),
     // A staff meal: cooked and counted in inventory, but charged nothing.
     employeeMeal: boolean('employee_meal').notNull().default(false),
+    // Dine in, to go or delivery. Null when the restaurant doesn't ask.
+    orderType: text('order_type').$type<OrderType>(),
   },
   (t) => [uniqueIndex('orders_date_number').on(t.businessDate, t.orderNumber)]
 );

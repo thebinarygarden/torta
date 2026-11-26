@@ -679,6 +679,10 @@ p {
   outline-offset: 2px;
 }
 .tt-timeline-label {
+  /* A month labels every fifth day; the rest still hold the line, so every
+     bar stands on the same baseline. */
+  flex: none;
+  height: 1lh;
   font: var(--type-small);
   color: var(--text-muted);
   text-align: center;
@@ -736,29 +740,29 @@ p {
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
-/* An employee meal in the sales table, beside its order number. */
+/* An order's type or employee meal in the sales table, beside its number. */
 .tt-meal {
   margin-left: var(--space-2);
   vertical-align: middle;
 }
-/* A customer's name in the orders table: tapping it narrows to them. */
-.tt-name-pick {
-  padding: 0;
-  border: 0;
-  background: none;
-  color: inherit;
-  font: inherit;
-  text-decoration: inherit;
-  cursor: pointer;
+/* An option in the cart: its label on the left, its control on the right. */
+.tt-option {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  /* Room for order type opened, so the cart below doesn't move. */
+  min-height: var(--control-md);
+  font: var(--type-small);
 }
-.tt-name-pick:hover,
-.tt-name-pick:focus-visible {
-  text-decoration: underline;
-  text-underline-offset: 3px;
+/* flora's switch puts its track first. */
+.tt-option.fl-switch {
+  flex-direction: row-reverse;
 }
-/* A full-width on/off button, like employee meal; on wears the accent. */
-.tt-toggle {
-  width: 100%;
+/* Order type opened is too wide for the row; it wraps and stays right. */
+.tt-option:not(.fl-switch) > :last-child {
+  margin-left: auto;
 }
 /* Items sold: tapping an item puts it on the chart. */
 .tt-item-pick {

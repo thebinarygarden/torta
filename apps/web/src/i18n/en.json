@@ -148,7 +148,6 @@
     "timelineDays": "orders by day",
     "barSummary": "{when} · orders {n} · {sales}",
     "onDay": "on {day}",
-    "itemsSold": "items sold",
     "addOrder": "add a past order",
     "addOrderHint": "for orders taken on paper or while torta was off. it is saved as completed and priced from the current menu.",
     "saveOrder": "save order",
@@ -163,11 +162,17 @@
     "nSold": "sold: {n}",
     "barSoldSummary": "{when} · sold {n} · {sales}",
     "itemTimelineHint": "tap items to add or remove them from the chart.",
-    "itemsSoldHint": "tap items to see them on the chart. pick several to compare them together.",
     "customerTimeline": "{name} by hour",
     "customerTimelineDays": "{name} by day",
-    "ordersHint": "tap a name to see only that customer's orders.",
-    "employeeMeals": "employee meals"
+    "employeeMeals": "employee meals",
+    "filter": "filter",
+    "orderType": "order type",
+    "mealsOnly": "employee meals only",
+    "customer": "customer",
+    "searchNames": "search names",
+    "clearFilters": "clear",
+    "done": "done",
+    "noMatch": "no orders match."
   },
   "period": {
     "day": "day",
@@ -216,7 +221,10 @@
     "restart": "restart to update",
     "updatesInstalledOnly": "updates work in the installed app.",
     "restartConfirm": "restart torta now? tablets reconnect in a few seconds.",
-    "lastBackup": "last backup at {time}"
+    "lastBackup": "last backup at {time}",
+    "askOrderType": "ask for order type",
+    "orderTypeDescription": "every order is marked dine in, to go or delivery, on the kitchen ticket and in sales.",
+    "defaultOrderType": "new orders start as"
   },
   "menu": {
     "title": "menu",
@@ -376,5 +384,10 @@
     "ingredients": "ingredients",
     "employeeMeal": "employee meal",
     "employeeMealNote": "cooked and counted in inventory, charged nothing."
+  },
+  "orderTypes": {
+    "dine_in": "dine in",
+    "to_go": "to go",
+    "delivery": "delivery"
   }
 }

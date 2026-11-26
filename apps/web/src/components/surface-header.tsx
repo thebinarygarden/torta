@@ -1,9 +1,8 @@
-import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
-import { Button } from '@binarygarden/flora/form';
 import { Tabs, type TabItem } from '@binarygarden/flora/navigation';
 import { ThemeToggleButton } from '@binarygarden/flora/theme';
 import { setSurface, type Surface } from '../api/auth';
+import { CollapsingTabs } from './collapsing-tabs';
 import { useHealth } from './health';
 import { LocaleToggle } from './locale-toggle';
 import { useT } from '../i18n';
@@ -49,55 +48,19 @@ export function SurfaceHeader<V extends string>({
 function SurfaceSwitch({ surface }: { surface: Surface }) {
   const navigate = useNavigate();
   const t = useT();
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    // The opening click lands on the button it replaces, which is no longer
-    // on the page by the time it bubbles here, so detached targets are ignored.
-    const away = (e: MouseEvent) => {
-      const target = e.target as Node;
-      if (target.isConnected && !ref.current?.contains(target)) setOpen(false);
-    };
-    const esc = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setOpen(false);
-    };
-    document.addEventListener('click', away);
-    document.addEventListener('keydown', esc);
-    return () => {
-      document.removeEventListener('click', away);
-      document.removeEventListener('keydown', esc);
-    };
-  }, [open]);
-
-  const label = { order: t.orders.order, kitchen: t.orders.kitchen };
-  // Admin isn't a surface the tablet remembers; it still asks for the password.
-  const go = (to: string) => {
-    if (to === 'order' || to === 'kitchen') setSurface(to);
-    navigate(`/${to}`);
-  };
   return (
-    <div ref={ref}>
-      {open ? (
-        <Tabs
-          variant="pill"
-          value={surface}
-          onChange={(v) => {
-            setOpen(false);
-            if (v !== surface) go(v);
-          }}
-          items={[
-            { value: 'order', label: label.order },
-            { value: 'kitchen', label: label.kitchen },
-            { value: 'admin', label: t.orders.admin },
-          ]}
-        />
-      ) : (
-        <Button size="sm" aria-expanded={false} onClick={() => setOpen(true)}>
-          {label[surface]}
-        </Button>
-      )}
-    </div>
+    <CollapsingTabs
+      value={surface}
+      // Admin isn't a surface the tablet remembers; it still asks for the password.
+      onChange={(to) => {
+        if (to === 'order' || to === 'kitchen') setSurface(to);
+        navigate(`/${to}`);
+      }}
+      items={[
+        { value: 'order', label: t.orders.order },
+        { value: 'kitchen', label: t.orders.kitchen },
+        { value: 'admin', label: t.orders.admin },
+      ]}
+    />
   );
 }

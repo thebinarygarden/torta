@@ -1,5 +1,12 @@
 import { useEffect, useState, type FormEvent } from 'react';
-import type { Currency, LiquidUnit, Settings, WeightUnit } from '@torta/shared';
+import {
+  orderTypes,
+  type Currency,
+  type LiquidUnit,
+  type OrderType,
+  type Settings,
+  type WeightUnit,
+} from '@torta/shared';
 import { Button, Checkbox, Input, Select } from '@binarygarden/flora/form';
 import { useToast } from '@binarygarden/flora/overlay';
 import { Card } from '@binarygarden/flora/ui';
@@ -17,6 +24,8 @@ type RestaurantForm = Pick<
   | 'liquidUnit'
   | 'taxEnabled'
   | 'taxRateBps'
+  | 'orderTypesEnabled'
+  | 'defaultOrderType'
 >;
 
 export function AdminSettings() {
@@ -27,6 +36,8 @@ export function AdminSettings() {
   const [currency, setCurrency] = useState<Currency>('USD');
   const [weightUnit, setWeightUnit] = useState<WeightUnit>('g');
   const [liquidUnit, setLiquidUnit] = useState<LiquidUnit>('ml');
+  const [orderTypesEnabled, setOrderTypesEnabled] = useState(true);
+  const [defaultOrderType, setDefaultOrderType] = useState<OrderType>('to_go');
   const [autoUpdate, setAutoUpdate] = useState(true);
   const [busy, setBusy] = useState(false);
   const [current, setCurrent] = useState('');
@@ -44,6 +55,8 @@ export function AdminSettings() {
         setCurrency(s.currency);
         setWeightUnit(s.weightUnit);
         setLiquidUnit(s.liquidUnit);
+        setOrderTypesEnabled(s.orderTypesEnabled);
+        setDefaultOrderType(s.defaultOrderType);
         setAutoUpdate(s.autoUpdate);
         setSaved(s);
       })
@@ -72,6 +85,8 @@ export function AdminSettings() {
     liquidUnit,
     taxEnabled,
     taxRateBps: Math.round(Number(tax) * 100),
+    orderTypesEnabled,
+    defaultOrderType,
   };
   // Save stays off until something differs from what the server has.
   const changed =
@@ -155,6 +170,23 @@ export function AdminSettings() {
               value={tax}
               onChange={(e) => setTax(e.target.value)}
               hint={t.settings.taxHint}
+            />
+          )}
+          <Checkbox
+            label={t.settings.askOrderType}
+            description={t.settings.orderTypeDescription}
+            checked={orderTypesEnabled}
+            onChange={(e) => setOrderTypesEnabled(e.target.checked)}
+          />
+          {orderTypesEnabled && (
+            <Select
+              label={t.settings.defaultOrderType}
+              value={defaultOrderType}
+              onChange={(e) => setDefaultOrderType(e.target.value as OrderType)}
+              options={orderTypes.map((type) => ({
+                value: type,
+                label: t.orderTypes[type],
+              }))}
             />
           )}
           <div>

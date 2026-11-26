@@ -19,7 +19,12 @@ export function TicketHead({
         <OrderTitle order={order} />
         {children}
       </div>
-      {order.employeeMeal && <Badge>{t.order.employeeMeal}</Badge>}
+      {(order.orderType || order.employeeMeal) && (
+        <div className="tt-row">
+          {order.orderType && <Badge>{t.orderTypes[order.orderType]}</Badge>}
+          {order.employeeMeal && <Badge>{t.order.employeeMeal}</Badge>}
+        </div>
+      )}
     </>
   );
 }

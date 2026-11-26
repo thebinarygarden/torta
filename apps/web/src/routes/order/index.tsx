@@ -3,6 +3,7 @@ import {
   type Menu,
   type Modifier,
   type Order as OrderRecord,
+  type OrderType,
   type ServerEvent,
   isActive,
 } from '@torta/shared';
@@ -15,7 +16,7 @@ import { useRealtime } from '../../api/ws';
 import {
   CartLines,
   CartPicker,
-  EmployeeMealToggle,
+  OrderOptions,
   MenuTiles,
   lineKey,
   orderItems,
@@ -91,6 +92,9 @@ export function Order() {
   const [editing, setEditing] = useState<OrderRecord | null>(null);
   // A staff meal goes to the kitchen as usual but is charged nothing.
   const [employeeMeal, setEmployeeMeal] = useState(false);
+  // Until one is picked, the order is the restaurant's default type.
+  const [pickedType, setPickedType] = useState<OrderType | null>(null);
+  const orderType = pickedType ?? health.defaultOrderType;
 
   const loadMenu = useCallback(() => {
     get<Menu>('/menu')
@@ -136,6 +140,7 @@ export function Order() {
     setLines([]);
     setCustomer('');
     setEmployeeMeal(false);
+    setPickedType(null);
     setEditing(null);
   };
 
@@ -156,6 +161,7 @@ export function Order() {
     setLines(loaded);
     setCustomer(order.customerName ?? '');
     setEmployeeMeal(order.employeeMeal);
+    setPickedType(order.orderType);
     setEditing(order);
     setView('new');
   };
@@ -167,6 +173,7 @@ export function Order() {
         customerName: customer.trim() || undefined,
         items: orderItems(lines),
         employeeMeal,
+        orderType,
       };
       const order = editing
         ? await put<OrderRecord>(`/orders/${editing.id}`, body)
@@ -284,7 +291,12 @@ export function Order() {
               value={customer}
               onChange={(e) => setCustomer(e.target.value)}
             />
-            <EmployeeMealToggle on={employeeMeal} onChange={setEmployeeMeal} />
+            <OrderOptions
+              employeeMeal={employeeMeal}
+              onEmployeeMeal={setEmployeeMeal}
+              orderType={orderType}
+              onOrderType={setPickedType}
+            />
             <datalist id="tt-customers">
               {customers.map((c) => (
                 <option key={c} value={c} />

@@ -380,6 +380,8 @@ describe('menu, orders and sales', () => {
       weightUnit: 'g',
       liquidUnit: 'ml',
       autoUpdate: true,
+      orderTypesEnabled: true,
+      defaultOrderType: 'to_go',
     });
     expect(
       (
@@ -487,6 +489,60 @@ describe('menu, orders and sales', () => {
     ).body;
     expect(edited.totalCents).toBe(0);
     await api.post(`/orders/${live.id}/status`, { status: 'cancelled' });
+  });
+
+  test('an order is typed by the tablet, the default, or not at all', async () => {
+    const items = [
+      { itemId: menu.taco.id, qty: 1, modifierIds: [menu.asada.id] },
+    ];
+    const close = (id: string) =>
+      api.post(`/orders/${id}/status`, { status: 'cancelled' });
+
+    // Out of the box the restaurant asks, and to go is the default.
+    expect((await api.get('/health')).body).toMatchObject({
+      orderTypesEnabled: true,
+      defaultOrderType: 'to_go',
+    });
+    const plain = (await api.post('/orders', { items })).body;
+    expect(plain.orderType).toBe('to_go');
+    const picked = (await api.post('/orders', { items, orderType: 'delivery' }))
+      .body;
+    expect(picked.orderType).toBe('delivery');
+    const edited = await api.put(`/orders/${picked.id}`, {
+      items,
+      orderType: 'dine_in',
+    });
+    expect(edited.body.orderType).toBe('dine_in');
+    expect(
+      (await api.post('/orders', { items, orderType: 'drive_thru' })).status
+    ).toBe(400);
+
+    const set = await api.patch('/admin/settings', {
+      defaultOrderType: 'dine_in',
+    });
+    expect(set.body.defaultOrderType).toBe('dine_in');
+    const past = await api.post('/admin/orders', {
+      at: '2024-05-01T12:00:00.000Z',
+      items,
+    });
+    expect(past.body.orderType).toBe('dine_in');
+    // Changing the default leaves earlier orders alone.
+    expect((await api.get(`/orders/${plain.id}`)).body.orderType).toBe('to_go');
+
+    // Off, nothing is typed, even from a tablet still showing the choice.
+    await api.patch('/admin/settings', { orderTypesEnabled: false });
+    const off = (await api.post('/orders', { items, orderType: 'delivery' }))
+      .body;
+    expect(off.orderType).toBeNull();
+    expect((await api.get(`/orders/${picked.id}`)).body.orderType).toBe(
+      'dine_in'
+    );
+
+    await api.patch('/admin/settings', {
+      orderTypesEnabled: true,
+      defaultOrderType: 'to_go',
+    });
+    for (const o of [plain, picked, off]) await close(o.id);
   });
 
   test('deleting a category cascades to its items', async () => {
