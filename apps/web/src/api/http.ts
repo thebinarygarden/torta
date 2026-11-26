@@ -1,4 +1,4 @@
-import type { LiquidUnit, WeightUnit } from '@torta/shared';
+import type { LiquidUnit, OrderType, WeightUnit } from '@torta/shared';
 import { getToken } from './auth';
 
 export class HttpError extends Error {
@@ -56,4 +56,6 @@ export type Health = {
   taxEnabled: boolean;
   weightUnit: WeightUnit;
   liquidUnit: LiquidUnit;
+  orderTypesEnabled: boolean;
+  defaultOrderType: OrderType;
 };

@@ -15,6 +15,13 @@
       "when": 1792560736299,
       "tag": "0001_stock_ledger",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1795719759996,
+      "tag": "0002_order_type",
+      "breakpoints": true
     }
   ]
 }

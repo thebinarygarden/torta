@@ -8,10 +8,9 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@binarygarden/flora": "^0.1.5",
+    "@binarygarden/flora": "^0.1.7",
     "@fontsource/hanken-grotesk": "^5",
     "@torta/shared": "workspace:*",
-    "framer-motion": "^13",
     "qrcode": "^1.5.4",
     "react": "^19",
     "react-dom": "^19",

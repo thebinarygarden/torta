@@ -20,6 +20,8 @@ export function settingsRoutes({ db, updater }: AppDeps) {
     weightUnit: row.weightUnit,
     liquidUnit: row.liquidUnit,
     autoUpdate: row.autoUpdate,
+    orderTypesEnabled: row.orderTypesEnabled,
+    defaultOrderType: row.defaultOrderType,
   });
 
   app.get('/admin/settings', async (c) => {

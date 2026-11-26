@@ -1,19 +1,23 @@
 import { useMemo, useState } from 'react';
-import type {
-  Ingredient,
-  IngredientChoice,
-  Item,
-  Menu,
-  Modifier,
-  OrderInput,
+import {
+  orderTypes,
+  type Ingredient,
+  type IngredientChoice,
+  type Item,
+  type Menu,
+  type Modifier,
+  type OrderInput,
+  type OrderType,
 } from '@torta/shared';
-import { Button, IconButton, Input } from '@binarygarden/flora/form';
+import { Button, IconButton, Input, Switch } from '@binarygarden/flora/form';
 import { IconMinus, IconPlus, IconX } from '@binarygarden/flora/icons';
 import { Tabs } from '@binarygarden/flora/navigation';
 import { Dialog } from '@binarygarden/flora/overlay';
 import { EmptyState, Tag } from '@binarygarden/flora/ui';
 import { useT } from '../i18n';
 import { choiceLabel, groupRule, ingredientNotes } from './choices';
+import { CollapsingTabs } from './collapsing-tabs';
+import { useHealth } from './health';
 import { formatCents } from './money';
 
 // The order being built, shared by the order screen and the owner's past
@@ -262,24 +266,46 @@ export function CartLines({
   );
 }
 
-/** Marks the cart as a staff meal: cooked as usual, charged nothing. */
-export function EmployeeMealToggle({
-  on,
-  onChange,
+/**
+ * What kind of order the cart holds: a staff meal (cooked as usual, charged
+ * nothing), and where it is eaten when the restaurant asks.
+ */
+export function OrderOptions({
+  employeeMeal,
+  onEmployeeMeal,
+  orderType,
+  onOrderType,
 }: {
-  on: boolean;
-  onChange: (on: boolean) => void;
+  employeeMeal: boolean;
+  onEmployeeMeal: (on: boolean) => void;
+  orderType: OrderType;
+  onOrderType: (type: OrderType) => void;
 }) {
   const t = useT();
+  const { health } = useHealth();
   return (
-    <Button
-      variant="secondary"
-      className="tt-toggle"
-      aria-pressed={on}
-      onClick={() => onChange(!on)}
-    >
-      {t.order.employeeMeal}
-    </Button>
+    <div className="tt-stack" data-gap="sm">
+      <Switch
+        className="tt-option"
+        label={t.order.employeeMeal}
+        checked={employeeMeal}
+        onChange={(e) => onEmployeeMeal(e.target.checked)}
+      />
+      {health.orderTypesEnabled && (
+        <div className="tt-option">
+          <span>{t.sales.orderType}</span>
+          <CollapsingTabs
+            variant="secondary"
+            value={orderType}
+            onChange={(v) => onOrderType(v as OrderType)}
+            items={orderTypes.map((type) => ({
+              value: type,
+              label: t.orderTypes[type],
+            }))}
+          />
+        </div>
+      )}
+    </div>
   );
 }
 

@@ -9,6 +9,8 @@ const fallback: Health = {
   taxEnabled: false,
   weightUnit: 'g',
   liquidUnit: 'ml',
+  orderTypesEnabled: true,
+  defaultOrderType: 'to_go',
 };
 
 const Ctx = createContext<{ health: Health; refresh: () => void }>({

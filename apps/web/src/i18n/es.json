@@ -148,7 +148,6 @@
     "timelineDays": "pedidos por día",
     "barSummary": "{when} · pedidos {n} · {sales}",
     "onDay": "el {day}",
-    "itemsSold": "productos vendidos",
     "addOrder": "agregar un pedido pasado",
     "addOrderHint": "para pedidos tomados en papel o con torta apagada. se guarda como terminado, con precios del menú actual.",
     "saveOrder": "guardar pedido",
@@ -163,11 +162,17 @@
     "nSold": "vendidos: {n}",
     "barSoldSummary": "{when} · vendidos {n} · {sales}",
     "itemTimelineHint": "toca productos para agregarlos o quitarlos de la gráfica.",
-    "itemsSoldHint": "toca productos para verlos en la gráfica. elige varios para verlos juntos.",
     "customerTimeline": "{name} por hora",
     "customerTimelineDays": "{name} por día",
-    "ordersHint": "toca un nombre para ver solo los pedidos de ese cliente.",
-    "employeeMeals": "comidas de empleados"
+    "employeeMeals": "comidas de empleados",
+    "filter": "filtrar",
+    "orderType": "tipo de pedido",
+    "mealsOnly": "solo comidas de empleados",
+    "customer": "cliente",
+    "searchNames": "buscar nombres",
+    "clearFilters": "limpiar",
+    "done": "listo",
+    "noMatch": "ningún pedido coincide."
   },
   "period": {
     "day": "día",
@@ -216,7 +221,10 @@
     "restart": "reiniciar y actualizar",
     "updatesInstalledOnly": "las actualizaciones funcionan en la app instalada.",
     "restartConfirm": "¿reiniciar torta ahora? las tabletas se reconectan en unos segundos.",
-    "lastBackup": "último respaldo: {time}"
+    "lastBackup": "último respaldo: {time}",
+    "askOrderType": "preguntar el tipo de pedido",
+    "orderTypeDescription": "cada pedido se marca como comer aquí, para llevar o domicilio, en el ticket de cocina y en ventas.",
+    "defaultOrderType": "los pedidos nuevos empiezan como"
   },
   "menu": {
     "title": "menú",
@@ -376,5 +384,10 @@
     "ingredients": "ingredientes",
     "employeeMeal": "comida de empleado",
     "employeeMealNote": "se cocina y cuenta en el inventario, sin cobrar."
+  },
+  "orderTypes": {
+    "dine_in": "comer aquí",
+    "to_go": "para llevar",
+    "delivery": "domicilio"
   }
 }

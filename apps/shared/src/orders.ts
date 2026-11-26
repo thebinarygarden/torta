@@ -24,6 +24,11 @@ const notes = z.string().trim().max(200).optional();
 export const ingredientChoice = z.enum(['none', 'side', 'extra']);
 export type IngredientChoice = z.infer<typeof ingredientChoice>;
 
+/** Where the order is eaten. Null when the restaurant doesn't ask. */
+export const orderType = z.enum(['dine_in', 'to_go', 'delivery']);
+export type OrderType = z.infer<typeof orderType>;
+export const orderTypes = orderType.options;
+
 export const orderItemInput = z.object({
   itemId: z.uuid(),
   qty: z.number().int().min(1).max(99),
@@ -43,6 +48,8 @@ export const orderInput = z.object({
   items: z.array(orderItemInput).min(1).max(100),
   // Cooked and taken from inventory like any order, but charged nothing.
   employeeMeal: z.boolean().optional(),
+  // Left out, the server uses the restaurant's default.
+  orderType: orderType.optional(),
 });
 
 /** An order the owner enters after the fact, at the time it happened. */
@@ -100,5 +107,6 @@ export type Order = {
   editedAt: string | null;
   /** A staff meal: everything on it is priced at zero. */
   employeeMeal: boolean;
+  orderType: OrderType | null;
   items: OrderItem[];
 };

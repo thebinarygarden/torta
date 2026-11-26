@@ -1,10 +1,15 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useOutletContext, useSearchParams } from 'react-router';
-import type { Order, SalesSummary } from '@torta/shared';
-import { Button, IconButton } from '@binarygarden/flora/form';
-import { IconPlus, IconTrashcan } from '@binarygarden/flora/icons';
+import {
+  orderTypes,
+  type Order,
+  type OrderType,
+  type SalesSummary,
+} from '@torta/shared';
+import { Button, IconButton, Input } from '@binarygarden/flora/form';
+import { IconFilter, IconPlus, IconTrashcan } from '@binarygarden/flora/icons';
 import { Tabs } from '@binarygarden/flora/navigation';
-import { useDialog, useToast } from '@binarygarden/flora/overlay';
+import { Dialog, useDialog, useToast } from '@binarygarden/flora/overlay';
 import {
   Badge,
   Card,
@@ -64,17 +69,36 @@ export function AdminSales() {
       all.includes(name) ? all.filter((n) => n !== name) : [...all, name]
     );
   // "taco and torta" in the chart title.
-  const chosenLabel = new Intl.ListFormat(undefined, {
+  const listed = new Intl.ListFormat(undefined, {
     style: 'short',
     type: 'conjunction',
-  }).format(chosen);
+  });
+  const chosenLabel = listed.format(chosen);
   const charting = chosen.length > 0;
-  // One customer at a time; tapping another name replaces it.
-  // The name is kept for the token, even in a period without their orders.
-  const [customer, setCustomer] = useState<{
-    key: string;
-    name: string;
-  } | null>(null);
+  // The customers picked in the filter dialog. Names are kept for the
+  // tokens, even in a period without their orders.
+  const [customers, setCustomers] = useState<{ key: string; name: string }[]>(
+    []
+  );
+  const toggleCustomer = (c: { key: string; name: string }) =>
+    setCustomers((all) =>
+      all.some((x) => x.key === c.key)
+        ? all.filter((x) => x.key !== c.key)
+        : [...all, { key: c.key, name: c.name }]
+    );
+  // Narrowing by order type or to staff meals, from the filter dialog.
+  const [types, setTypes] = useState<OrderType[]>([]);
+  const [mealsOnly, setMealsOnly] = useState(false);
+  const toggleType = (type: OrderType) =>
+    setTypes((all) =>
+      all.includes(type) ? all.filter((x) => x !== type) : [...all, type]
+    );
+  const [filtering, setFiltering] = useState(false);
+  const [search, setSearch] = useState('');
+  const closeDialog = () => {
+    setFiltering(false);
+    setSearch('');
+  };
   const [tab, setTab] = useState<Tab>('orders');
   const { health } = useHealth();
   const { showConfirm } = useDialog();
@@ -121,13 +145,19 @@ export function AdminSales() {
   // every day, including ones still to come, so a new owner sees the whole
   // shape a few days in.
   // With items picked, each bar counts how many of them sold instead.
-  // The chart and both tables follow the picked customer.
+  // The chart and both tables follow the filters.
+  const filtered = customers.length > 0 || types.length > 0 || mealsOnly;
   const mine = useMemo(
     () =>
-      customer === null
-        ? orders
-        : orders.filter((o) => customerKey(o) === customer.key),
-    [orders, customer]
+      orders.filter(
+        (o) =>
+          (customers.length === 0 ||
+            customers.some((c) => c.key === customerKey(o))) &&
+          (types.length === 0 ||
+            (o.orderType !== null && types.includes(o.orderType))) &&
+          (!mealsOnly || o.employeeMeal)
+      ),
+    [orders, customers, types, mealsOnly]
   );
 
   const bars = useMemo(() => {
@@ -251,6 +281,19 @@ export function AdminSales() {
       .sort((a, b) => b.qty - a.qty || b.cents - a.cents);
   }, [inBar, menu]);
 
+  // The period's customers for the filter dialog, most orders first.
+  const names = useMemo(() => {
+    const by = new Map<string, { key: string; name: string; n: number }>();
+    for (const o of orders) {
+      const key = customerKey(o);
+      if (!key) continue;
+      const seen = by.get(key);
+      if (seen) seen.n += 1;
+      else by.set(key, { key, name: o.customerName!.trim(), n: 1 });
+    }
+    return [...by.values()].sort((a, b) => b.n - a.n);
+  }, [orders]);
+
   const cancelled = orders.filter((o) => o.status === 'cancelled').length;
   const unnamed = orders.filter((o) => !o.customerName).length;
   const time = (iso: string) =>
@@ -353,12 +396,12 @@ export function AdminSales() {
             padding="md"
             title={
               !charting
-                ? customer !== null
+                ? customers.length > 0
                   ? format(
                       period === 'day'
                         ? t.sales.customerTimeline
                         : t.sales.customerTimelineDays,
-                      { name: customer.name }
+                      { name: listed.format(customers.map((c) => c.name)) }
                     )
                   : period === 'day'
                     ? t.sales.timeline
@@ -439,20 +482,26 @@ export function AdminSales() {
                         : t.sales.itemTimelineHint}
                     </p>
                   </div>
-                  <Tabs
-                    value={tab}
-                    onChange={(v) => setTab(v as Tab)}
-                    items={[
-                      {
-                        value: 'orders',
-                        label: t.sales.lookup,
-                        count: shown.length,
-                      },
-                      { value: 'items', label: t.sales.itemsSold },
-                    ]}
-                  />
-                  {(charting || picked || customer !== null) && (
-                    <div className="tt-row" data-center>
+                  <div className="tt-row" data-between>
+                    <Tabs
+                      variant="pill"
+                      value={tab}
+                      onChange={(v) => setTab(v as Tab)}
+                      items={[
+                        { value: 'orders', label: t.sales.lookup },
+                        { value: 'items', label: t.sales.items },
+                      ]}
+                    />
+                    <IconButton
+                      label={t.sales.filter}
+                      variant={filtered ? 'outline' : 'ghost'}
+                      onClick={() => setFiltering(true)}
+                    >
+                      <IconFilter size={18} />
+                    </IconButton>
+                  </div>
+                  {(charting || picked || filtered) && (
+                    <div className="tt-row">
                       {picked && (
                         <Tag
                           onRemove={() => setPick(null)}
@@ -463,14 +512,32 @@ export function AdminSales() {
                             : format(t.sales.onDay, { day: picked.tip })}
                         </Tag>
                       )}
-                      {customer !== null && (
+                      {types.map((type) => (
                         <Tag
-                          onRemove={() => setCustomer(null)}
+                          key={type}
+                          onRemove={() => toggleType(type)}
                           labels={t.flora.tag}
                         >
-                          {customer.name}
+                          {t.orderTypes[type]}
+                        </Tag>
+                      ))}
+                      {mealsOnly && (
+                        <Tag
+                          onRemove={() => setMealsOnly(false)}
+                          labels={t.flora.tag}
+                        >
+                          {t.sales.employeeMeals}
                         </Tag>
                       )}
+                      {customers.map((c) => (
+                        <Tag
+                          key={c.key}
+                          onRemove={() => toggleCustomer(c)}
+                          labels={t.flora.tag}
+                        >
+                          {c.name}
+                        </Tag>
+                      ))}
                       {chosen.map((name) => (
                         <Tag
                           key={name}
@@ -483,12 +550,9 @@ export function AdminSales() {
                     </div>
                   )}
                   {tab === 'orders' ? (
-                    <>
-                      {!charting && !picked && customer === null && (
-                        <p className="tt-small tt-muted">
-                          {t.sales.ordersHint}
-                        </p>
-                      )}
+                    shown.length === 0 ? (
+                      <EmptyState>{t.sales.noMatch}</EmptyState>
+                    ) : (
                       <Table>
                         <thead>
                           <tr>
@@ -509,23 +573,7 @@ export function AdminSales() {
                             >
                               <td>{time(o.createdAt)}</td>
                               <td>
-                                {o.customerName ? (
-                                  <button
-                                    type="button"
-                                    className="tt-name-pick"
-                                    aria-pressed={
-                                      customerKey(o) === customer?.key
-                                    }
-                                    onClick={() =>
-                                      setCustomer({
-                                        key: customerKey(o)!,
-                                        name: o.customerName!.trim(),
-                                      })
-                                    }
-                                  >
-                                    {o.customerName}
-                                  </button>
-                                ) : null}{' '}
+                                {o.customerName}{' '}
                                 <span
                                   className={
                                     o.customerName ? 'tt-muted' : undefined
@@ -533,6 +581,11 @@ export function AdminSales() {
                                 >
                                   #{o.orderNumber}
                                 </span>
+                                {o.orderType && (
+                                  <Badge className="tt-meal">
+                                    {t.orderTypes[o.orderType]}
+                                  </Badge>
+                                )}
                                 {o.employeeMeal && (
                                   <Badge className="tt-meal">
                                     {t.order.employeeMeal}
@@ -556,61 +609,132 @@ export function AdminSales() {
                           ))}
                         </tbody>
                       </Table>
-                    </>
+                    )
                   ) : sold.length === 0 ? (
                     <EmptyState>{t.sales.noneSold}</EmptyState>
                   ) : (
-                    <>
-                      {/* The tokens above replace the hint once anything is picked. */}
-                      {!charting && !picked && customer === null && (
-                        <p className="tt-small tt-muted">
-                          {t.sales.itemsSoldHint}
-                        </p>
-                      )}
-                      <Table>
-                        <thead>
-                          <tr>
-                            <th>{t.sales.item}</th>
-                            <th data-num>{t.sales.qty}</th>
-                            <th data-num>{t.sales.title}</th>
+                    <Table>
+                      <thead>
+                        <tr>
+                          <th>{t.sales.item}</th>
+                          <th data-num>{t.sales.qty}</th>
+                          <th data-num>{t.sales.title}</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {sold.map((i) => (
+                          <tr
+                            key={i.name}
+                            data-picked={chosen.includes(i.name) || undefined}
+                          >
+                            <td>
+                              <button
+                                type="button"
+                                className="tt-item-pick"
+                                aria-pressed={chosen.includes(i.name)}
+                                onClick={() => toggleItem(i.name)}
+                              >
+                                {i.name}
+                                {i.options.length > 0 && (
+                                  <span className="tt-options">
+                                    {i.options
+                                      .map(([name, qty]) => `${name} ${qty}`)
+                                      .join(' · ')}
+                                  </span>
+                                )}
+                              </button>
+                            </td>
+                            <td data-num>{i.qty}</td>
+                            <td data-num>{money(i.cents)}</td>
                           </tr>
-                        </thead>
-                        <tbody>
-                          {sold.map((i) => (
-                            <tr
-                              key={i.name}
-                              data-picked={chosen.includes(i.name) || undefined}
-                            >
-                              <td>
-                                <button
-                                  type="button"
-                                  className="tt-item-pick"
-                                  aria-pressed={chosen.includes(i.name)}
-                                  onClick={() => toggleItem(i.name)}
-                                >
-                                  {i.name}
-                                  {i.options.length > 0 && (
-                                    <span className="tt-options">
-                                      {i.options
-                                        .map(([name, qty]) => `${name} ${qty}`)
-                                        .join(' · ')}
-                                    </span>
-                                  )}
-                                </button>
-                              </td>
-                              <td data-num>{i.qty}</td>
-                              <td data-num>{money(i.cents)}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </Table>
-                    </>
+                        ))}
+                      </tbody>
+                    </Table>
                   )}
                 </>
               )}
             </div>
           </Card>
         </>
+      )}
+      {filtering && (
+        <Dialog
+          open
+          title={t.sales.filter}
+          onClose={closeDialog}
+          footer={
+            <>
+              <Button
+                variant="ghost"
+                disabled={!filtered}
+                onClick={() => {
+                  setTypes([]);
+                  setMealsOnly(false);
+                  setCustomers([]);
+                }}
+              >
+                {t.sales.clearFilters}
+              </Button>
+              <Button onClick={closeDialog}>{t.sales.done}</Button>
+            </>
+          }
+        >
+          <div className="tt-stack">
+            {(types.length > 0 || orders.some((o) => o.orderType)) && (
+              <div className="tt-group">
+                <span className="tt-label">{t.sales.orderType}</span>
+                <div className="tt-row">
+                  {orderTypes.map((type) => (
+                    <Tag
+                      key={type}
+                      selected={types.includes(type)}
+                      onClick={() => toggleType(type)}
+                    >
+                      {t.orderTypes[type]}
+                    </Tag>
+                  ))}
+                </div>
+              </div>
+            )}
+            <div className="tt-group">
+              <span className="tt-label">{t.sales.employeeMeals}</span>
+              <div className="tt-row">
+                <Tag
+                  selected={mealsOnly}
+                  onClick={() => setMealsOnly(!mealsOnly)}
+                >
+                  {t.sales.mealsOnly}
+                </Tag>
+              </div>
+            </div>
+            {names.length > 0 && (
+              <div className="tt-group">
+                <span className="tt-label">{t.sales.customer}</span>
+                <Input
+                  size="sm"
+                  placeholder={t.sales.searchNames}
+                  aria-label={t.sales.searchNames}
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
+                <div className="tt-row">
+                  {names
+                    .filter((n) => n.key.includes(search.trim().toLowerCase()))
+                    .slice(0, 12)
+                    .map((n) => (
+                      <Tag
+                        key={n.key}
+                        selected={customers.some((c) => c.key === n.key)}
+                        onClick={() => toggleCustomer(n)}
+                      >
+                        {n.name}
+                      </Tag>
+                    ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </Dialog>
       )}
     </>
   );

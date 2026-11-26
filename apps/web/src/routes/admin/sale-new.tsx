@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, useOutletContext, useSearchParams } from 'react-router';
-import type { Order } from '@torta/shared';
+import type { Order, OrderType } from '@torta/shared';
 import { Button, Input } from '@binarygarden/flora/form';
 import { Card, EmptyState } from '@binarygarden/flora/ui';
 import { useToast } from '@binarygarden/flora/overlay';
@@ -8,7 +8,7 @@ import { post } from '../../api/http';
 import {
   CartLines,
   CartPicker,
-  EmployeeMealToggle,
+  OrderOptions,
   MenuTiles,
   orderItems,
   useCart,
@@ -46,6 +46,8 @@ export function AdminSaleNew() {
   );
   const [customer, setCustomer] = useState('');
   const [employeeMeal, setEmployeeMeal] = useState(false);
+  const [pickedType, setPickedType] = useState<OrderType | null>(null);
+  const orderType = pickedType ?? health.defaultOrderType;
   const [saving, setSaving] = useState(false);
 
   const at = new Date(`${date}T${time}`);
@@ -60,6 +62,7 @@ export function AdminSaleNew() {
         customerName: customer.trim() || undefined,
         items: orderItems(cart.lines),
         employeeMeal,
+        orderType,
       });
       showToast({
         message: format(t.sales.added, { order: orderLabel(order) }),
@@ -120,7 +123,12 @@ export function AdminSaleNew() {
               value={customer}
               onChange={(e) => setCustomer(e.target.value)}
             />
-            <EmployeeMealToggle on={employeeMeal} onChange={setEmployeeMeal} />
+            <OrderOptions
+              employeeMeal={employeeMeal}
+              onEmployeeMeal={setEmployeeMeal}
+              orderType={orderType}
+              onOrderType={setPickedType}
+            />
             <CartLines cart={cart} currency={health.currency} />
             <div className="tt-totals">
               <span className="tt-muted">{t.order.subtotal}</span>

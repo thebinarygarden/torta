@@ -18,6 +18,8 @@ export function setupRoutes({ db, sessions, version }: AppDeps) {
       taxEnabled: cfg?.taxEnabled ?? false,
       weightUnit: cfg?.weightUnit ?? 'g',
       liquidUnit: cfg?.liquidUnit ?? 'ml',
+      orderTypesEnabled: cfg?.orderTypesEnabled ?? true,
+      defaultOrderType: cfg?.defaultOrderType ?? 'to_go',
     });
   });
 

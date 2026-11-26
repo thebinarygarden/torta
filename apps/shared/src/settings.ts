@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { orderType, type OrderType } from './orders';
 import {
   currency,
   liquidUnit,
@@ -22,6 +23,8 @@ export const settingsPatch = z.object({
   weightUnit: weightUnit.optional(),
   liquidUnit: liquidUnit.optional(),
   autoUpdate: z.boolean().optional(),
+  orderTypesEnabled: z.boolean().optional(),
+  defaultOrderType: orderType.optional(),
 });
 
 export const passwordInput = z.object({ current: password, next: password });
@@ -36,6 +39,9 @@ export type Settings = {
   liquidUnit: LiquidUnit;
   /** Download new versions in the background. Installed app only. */
   autoUpdate: boolean;
+  /** Off saves orders with no type but keeps the default for later. */
+  orderTypesEnabled: boolean;
+  defaultOrderType: OrderType;
 };
 
 export type SalesSummary = {

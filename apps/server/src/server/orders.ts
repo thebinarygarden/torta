@@ -48,6 +48,7 @@ function toOrder(row: OrderRow, items: OrderItemRow[]): Order {
     foodMade: row.foodMade,
     editedAt: row.editedAt?.toISOString() ?? null,
     employeeMeal: row.employeeMeal,
+    orderType: row.orderType,
     items: items
       .filter((i) => i.orderId === row.id)
       .sort((a, b) => a.sortOrder - b.sortOrder)
@@ -221,6 +222,12 @@ async function priceLines(
   const taxCents = taxFor(subtotalCents, taxRateBps);
   return {
     lines,
+    // A tablet that sends no type, or still shows one after it was turned
+    // off, gets what the restaurant's settings say.
+    orderType:
+      (cfg?.orderTypesEnabled ?? true)
+        ? (input.orderType ?? cfg?.defaultOrderType ?? 'to_go')
+        : null,
     totals: {
       subtotalCents,
       taxRateBps,
@@ -241,7 +248,11 @@ export async function createOrder(
 ): Promise<Order> {
   const { past } = ctx;
   return db.transaction(async (tx) => {
-    const { lines, totals } = await priceLines(tx, input, past !== undefined);
+    const { lines, orderType, totals } = await priceLines(
+      tx,
+      input,
+      past !== undefined
+    );
 
     const businessDate = localDate(past);
     const [agg] = await tx
@@ -261,6 +272,7 @@ export async function createOrder(
         notes: input.notes ?? null,
         customerName: input.customerName || null,
         employeeMeal: input.employeeMeal ?? false,
+        orderType,
         ...totals,
       })
       .returning();
@@ -293,7 +305,12 @@ export async function editOrder(
     if (!isActive(existing)) {
       throw new ApiError(409, 'bad_transition', existing.status);
     }
-    const { lines, totals } = await priceLines(tx, input);
+    // A tablet that sends no type, like one still on the page from before
+    // an update, keeps the type the order already has.
+    const { lines, orderType, totals } = await priceLines(tx, {
+      ...input,
+      orderType: input.orderType ?? existing.orderType ?? undefined,
+    });
     const now = new Date();
     const [row] = await tx
       .update(schema.orders)
@@ -301,6 +318,7 @@ export async function editOrder(
         notes: input.notes ?? null,
         customerName: input.customerName || null,
         employeeMeal: input.employeeMeal ?? false,
+        orderType,
         ...totals,
         updatedAt: now,
         editedAt: now,
